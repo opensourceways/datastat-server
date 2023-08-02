@@ -14,6 +14,7 @@ package com.datastat.util;
 import java.io.Serializable;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
 import javax.net.ssl.SSLContext;
@@ -111,8 +112,8 @@ public class HttpClientUtils implements Serializable {
                 return null;
             }
         };
-
-        sc.init(null, new TrustManager[]{trustManager}, null);
+        SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        sc.init(null, new TrustManager[]{trustManager}, secureRandom);
         return sc;
     }
 
