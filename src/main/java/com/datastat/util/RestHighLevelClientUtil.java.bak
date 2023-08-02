@@ -42,9 +42,8 @@ public class RestHighLevelClientUtil {
 
         SSLContext sc = null;
         try {
-            sc = SSLContext.getInstance("TLSv1.2");
-            SecureRandom secureRandom = SecureRandom.getInstanceStrong();
-            sc.init(null, trustAllCerts, secureRandom);
+            sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new SecureRandom());
         } catch (KeyManagementException | NoSuchAlgorithmException e) {
             logger.error("exception", e);
         }

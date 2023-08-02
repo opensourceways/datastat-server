@@ -112,8 +112,8 @@ public class HttpClientUtils implements Serializable {
                 return null;
             }
         };
-		SecureRandom SecureRandom = java.security.SecureRandom.getInstanceStrong();
-        sc.init(null, new TrustManager[] { trustManager }, SecureRandom);
+
+        sc.init(null, new TrustManager[]{trustManager}, null);
         return sc;
     }
 

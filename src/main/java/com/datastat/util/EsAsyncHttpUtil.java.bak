@@ -104,7 +104,7 @@ public class EsAsyncHttpUtil {
             }
         };
 		SecureRandom secureRandom = SecureRandom.getInstanceStrong();
-        sc.init(null, new TrustManager[]{trustManager}, secureRandom);
+        sc.init(null, new TrustManager[]{trustManager}, null);
         return sc;
     }
 
