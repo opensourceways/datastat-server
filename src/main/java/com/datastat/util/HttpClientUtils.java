@@ -14,6 +14,7 @@ package com.datastat.util;
 import java.io.Serializable;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
 import javax.net.ssl.SSLContext;
@@ -57,7 +58,7 @@ public class HttpClientUtils implements Serializable {
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             logger.error("exception", e);
         }
-        //设置协议http和https对应的处理socket链接工厂的对象
+        // 设置协议http和https对应的处理socket链接工厂的对象
         Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register("http", PlainConnectionSocketFactory.INSTANCE)
                 .register("https", new SSLConnectionSocketFactory(sslcontext))
@@ -66,18 +67,16 @@ public class HttpClientUtils implements Serializable {
         connectionManager.setMaxTotal(1000);
         connectionManager.setDefaultMaxPerRoute(50);
         myStrategy = (response, context) -> {
-            HeaderElementIterator it = new BasicHeaderElementIterator
-                    (response.headerIterator(HTTP.CONN_KEEP_ALIVE));
+            HeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator(HTTP.CONN_KEEP_ALIVE));
             while (it.hasNext()) {
                 HeaderElement he = it.nextElement();
                 String param = he.getName();
                 String value = he.getValue();
-                if (value != null && param.equalsIgnoreCase
-                        ("timeout")) {
+                if (value != null && param.equalsIgnoreCase("timeout")) {
                     return Long.parseLong(value) * 1000;
                 }
             }
-            return 60 * 1000;//如果没有约定，则默认定义时长为60s
+            return 60 * 1000;// 如果没有约定，则默认定义时长为60s
         };
 
         credentialsProvider = new BasicCredentialsProvider();
@@ -111,8 +110,8 @@ public class HttpClientUtils implements Serializable {
                 return null;
             }
         };
-
-        sc.init(null, new TrustManager[]{trustManager}, null);
+        SecureRandom SecureRandom = java.security.SecureRandom.getInstanceStrong();
+        sc.init(null, new TrustManager[] { trustManager }, SecureRandom);
         return sc;
     }
 

@@ -35,15 +35,17 @@ public class RestHighLevelClientUtil {
      * 创建客户端的类，定义create函数用于创建客户端。
      */
     private static final Logger logger = LoggerFactory.getLogger(RestHighLevelClientUtil.class);
+
     public static RestHighLevelClient create(List<String> host, int port, String protocol,
-                                             String username, String password) throws IOException {
+            String username, String password) throws IOException {
         final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
 
         SSLContext sc = null;
         try {
-            sc = SSLContext.getInstance("SSL");
-            sc.init(null, trustAllCerts, new SecureRandom());
+            sc = SSLContext.getInstance("TLSv1.2");
+            SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+            sc.init(null, trustAllCerts, secureRandom);
         } catch (KeyManagementException | NoSuchAlgorithmException e) {
             logger.error("exception", e);
         }
@@ -74,7 +76,7 @@ public class RestHighLevelClientUtil {
     /**
      * trustAllCerts忽略证书配置。
      */
-    public static TrustManager[] trustAllCerts = new TrustManager[]{
+    public static TrustManager[] trustAllCerts = new TrustManager[] {
             new X509TrustManager() {
                 @Override
                 public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -98,7 +100,7 @@ public class RestHighLevelClientUtil {
         private final SSLIOSessionStrategy sslStrategy;
 
         SecuredHttpClientConfigCallback(final SSLIOSessionStrategy sslStrategy,
-                                        @Nullable final CredentialsProvider credentialsProvider) {
+                @Nullable final CredentialsProvider credentialsProvider) {
             this.sslStrategy = Objects.requireNonNull(sslStrategy);
             this.credentialsProvider = credentialsProvider;
         }
