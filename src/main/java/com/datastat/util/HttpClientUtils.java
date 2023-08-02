@@ -67,18 +67,16 @@ public class HttpClientUtils implements Serializable {
         connectionManager.setMaxTotal(1000);
         connectionManager.setDefaultMaxPerRoute(50);
         myStrategy = (response, context) -> {
-            HeaderElementIterator it = new BasicHeaderElementIterator
-                    (response.headerIterator(HTTP.CONN_KEEP_ALIVE));
+            HeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator(HTTP.CONN_KEEP_ALIVE));
             while (it.hasNext()) {
                 HeaderElement he = it.nextElement();
                 String param = he.getName();
                 String value = he.getValue();
-                if (value != null && param.equalsIgnoreCase
-                        ("timeout")) {
+                if (value != null && param.equalsIgnoreCase("timeout")) {
                     return Long.parseLong(value) * 1000;
                 }
             }
-            return 60 * 1000;//如果没有约定，则默认定义时长为60s
+            return 60 * 1000;// 如果没有约定，则默认定义时长为60s
         };
 
         credentialsProvider = new BasicCredentialsProvider();
@@ -112,7 +110,7 @@ public class HttpClientUtils implements Serializable {
                 return null;
             }
         };
-		SecureRandom SecureRandom = java.security.SecureRandom.getInstanceStrong();
+        SecureRandom SecureRandom = java.security.SecureRandom.getInstanceStrong();
         sc.init(null, new TrustManager[] { trustManager }, SecureRandom);
         return sc;
     }
