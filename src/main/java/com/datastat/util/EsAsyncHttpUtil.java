@@ -17,6 +17,7 @@ import io.netty.handler.ssl.JdkSslContext;
 import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
@@ -102,8 +103,8 @@ public class EsAsyncHttpUtil {
                 return new X509Certificate[0];
             }
         };
-
-        sc.init(null, new TrustManager[]{trustManager}, null);
+        SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        sc.init(null, new TrustManager[]{trustManager}, secureRandom);
         return sc;
     }
 
