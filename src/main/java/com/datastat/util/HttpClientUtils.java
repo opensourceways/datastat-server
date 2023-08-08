@@ -13,6 +13,7 @@ package com.datastat.util;
 
 import java.io.Serializable;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
@@ -20,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.http.HeaderElement;
@@ -106,8 +108,15 @@ public class HttpClientUtils implements Serializable {
             public void checkServerTrusted(
                     java.security.cert.X509Certificate[] paramArrayOfX509Certificate,
                     String paramString) throws CertificateException {
+                        try {
+                            TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                            factory.init((KeyStore) null);
+                            X509TrustManager manager = (X509TrustManager) factory.getTrustManagers()[0];
+                            manager.checkClientTrusted(paramArrayOfX509Certificate, paramString);
+                        } catch (Exception e) {
+                            throw new CertificateException("Fialed to verify server certificate", null);
+                        }
             }
-
             @Override
             public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                 return new X509Certificate[0];
