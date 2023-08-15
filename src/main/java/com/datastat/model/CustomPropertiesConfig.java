@@ -76,6 +76,7 @@ public class CustomPropertiesConfig {
     private String giteeVersionIndex;
     private String meetupApplyFormIndex;
     private String userTagIndex;
+    private String npsIndex;
 
     // -- query str --
     private String extOsQueryStr;

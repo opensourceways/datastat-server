@@ -15,12 +15,12 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.datastat.model.BlueZoneUser;
 import com.datastat.model.CustomPropertiesConfig;
+import com.datastat.model.NpsBody;
 import com.datastat.model.QaBotRequestBody;
 import com.datastat.model.SigDetails;
 import com.datastat.model.SigDetailsMaintainer;
 import com.datastat.model.UserTagInfo;
 import com.datastat.model.meetup.MeetupApplyForm;
-import com.datastat.model.meetup.SurveyAnswer;
 import com.datastat.model.vo.*;
 import com.datastat.model.yaml.*;
 import com.datastat.result.ReturnCode;
@@ -2343,13 +2343,12 @@ public class QueryDao {
     public String getCommunityIsv(CustomPropertiesConfig queryConf, String localYamlPath) {
         String yamlFile = queryConf.getIsvYamlUrl();
         YamlUtil yamlUtil = new YamlUtil();
-        // String localFile = yamlUtil.wget(yamlFile, localYamlPath);
         CommunityIsvYaml communityIsvs = yamlUtil.readLocalYaml(yamlFile, CommunityIsvYaml.class);       
         return objectMapper.valueToTree(communityIsvs.getList()).toString();
     }
 
     public String putMeetupApplyForm(CustomPropertiesConfig queryConf, String item, MeetupApplyForm meetupApplyForm, String token) {
-        ArrayList<String> errorMesseages = checkoutMeetupApplyFormField(meetupApplyForm);
+        ArrayList<String> errorMesseages = meetupApplyForm.validMeetupApplyFormField();
         if (errorMesseages.size() > 0) {
             return "{\"code\":400,\"data\":{\"" + item + "\":\"write error\"},\"msg:" + errorMesseages + "\"}";
         }
@@ -2400,35 +2399,6 @@ public class QueryDao {
             logger.error("exception", e);
         }
         return res;
-    }
-
-    public ArrayList<String> checkoutMeetupApplyFormField(MeetupApplyForm meetupApplyForm) {
-        ArrayList<String> errorMesseges = new ArrayList<>();
-        if (!validDuration(meetupApplyForm.getDuration())) {
-            errorMesseges.add("duration error");
-        }
-        if (!validMeetupFormat(meetupApplyForm.getMeetupFormat())) {
-            errorMesseges.add("meetup format error");
-        }
-        return errorMesseges;
-    }
-
-    private Boolean validDuration(SurveyAnswer value){
-        List<String> valueList = Arrays.asList("半天", "全天", "其他");
-        String duration = value.getOptional();
-        if (valueList.contains(duration)) {
-            return true;
-        }
-        return false;
-    }
-
-    private Boolean validMeetupFormat(SurveyAnswer value){
-        List<String> valueList = Arrays.asList("线上活动", "线下活动", "线上+线下", "其他");
-        String format = value.getOptional();
-        if (valueList.contains(format)) {
-            return true;
-        }
-        return false;
     }
 
     @SneakyThrows
@@ -2629,4 +2599,29 @@ public class QueryDao {
         return res;
 
     }
+
+    @SneakyThrows
+    public String getNps(CustomPropertiesConfig queryConf, NpsBody body) {
+        HashMap<String, Object> resMap = new HashMap<>();
+        resMap.put("community", body.getCommunity());
+        resMap.put("page", body.getPage());
+        resMap.put("score", body.getScore());
+        resMap.put("suggest", body.getSuggest());
+
+        Date now = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        String nowStr = simpleDateFormat.format(now);
+        String uuid = UUID.randomUUID().toString();
+        resMap.put("created_at", nowStr);
+
+        BulkRequest request = new BulkRequest();
+        RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+        String index = queryConf.getNpsIndex();
+        request.add(new IndexRequest(index, "_doc", uuid).source(resMap));
+        if (request.requests().size() != 0)
+            restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+        restHighLevelClient.close();
+        return resultJsonStr(200, "success", "success");
+    }
+    
 }
