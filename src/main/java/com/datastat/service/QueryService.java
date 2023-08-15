@@ -1184,4 +1184,19 @@ public class QueryService {
         CustomPropertiesConfig queryConf = getQueryConf(request);
         return queryDao.getNps(queryConf, body);
     }
+
+    public String queryInnovationItems(HttpServletRequest request, String community) {
+        if (!"openeuler".equals(community.toLowerCase())) {
+            return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        }
+        String key = community.toLowerCase() + "innovationItems";
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.queryInnovationItems(queryConf);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

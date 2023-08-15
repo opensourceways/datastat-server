@@ -2610,5 +2610,18 @@ public class QueryDao {
         restHighLevelClient.close();
         return resultJsonStr(200, "success", "success");
     }
+
+    @SneakyThrows
+    public String queryInnovationItems(CustomPropertiesConfig queryConf) {
+        List<String> res = new ArrayList<>();
+        YamlUtil yamlUtil = new YamlUtil();
+        InnovationItemYaml items = yamlUtil.readLocalYaml(queryConf.getInnovationItemAddress(), 
+        InnovationItemYaml.class);
+        for (InnovationItemInfo item : items.getInnovationprojects()) {
+            String name = item.getProjectName().trim();
+            res.add(name);
+        }
+        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
     
 }

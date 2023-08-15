@@ -149,6 +149,7 @@ public class CustomPropertiesConfig {
     private String communityVersions;
     private String eurPackagesQuery;
     private String aggGroupCommentQueryStr;
+    private String innovationItemAddress;
 
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
 
