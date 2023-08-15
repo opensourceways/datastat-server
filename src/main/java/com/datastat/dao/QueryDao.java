@@ -2593,6 +2593,19 @@ public class QueryDao {
         return result(HttpStatus.OK, "success", res);
     }
 
+    @SneakyThrows
+    public String queryInnovationItems(CustomPropertiesConfig queryConf) {
+        List<String> res = new ArrayList<>();
+        YamlUtil yamlUtil = new YamlUtil();
+        InnovationItemYaml items = yamlUtil.readLocalYaml(queryConf.getInnovationItemAddress(), 
+        InnovationItemYaml.class);
+        for (InnovationItemInfo item : items.getList()) {
+            String name = item.getName().trim();
+            res.add(name);
+        }
+        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
+
     private ResponseEntity result(HttpStatus status, String msg, Object data) {
         HashMap<String, Object> res = new HashMap<>();
         res.put("code", status.value());

@@ -532,4 +532,9 @@ public class QueryController {
         return res;
     }
 
+    @RequestMapping(value = "/innovation_items")
+    public String queryInnovationItems(HttpServletRequest request, @RequestParam(value = "community") String community) {
+        return queryService.queryInnovationItems(request, community);
+    }
+
 }
