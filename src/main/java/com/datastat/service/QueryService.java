@@ -389,7 +389,7 @@ public class QueryService {
             QueryDao queryDao = getQueryDao(request);
             CustomPropertiesConfig queryConf = getQueryConf(request);
             result = queryDao.queryUserContributors(queryConf, community, contributeType, timeRange, repo, null);
-            redisDao.set(key, result, redisDefaultExpire);
+            //redisDao.set(key, result, redisDefaultExpire);
         }
         return result;
     }
@@ -1195,7 +1195,21 @@ public class QueryService {
         String result = (String) redisDao.get(key);
         if (result == null) {
             result = queryDao.queryInnovationItems(queryConf);
-            redisDao.set(key, result, redisDefaultExpire);
+            //redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
+
+    public String queryIssueDefect(HttpServletRequest request, String community, String timeRange) {
+        if (!checkCommunity(community)) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        String item = "issueDefect";
+        String key = community.toLowerCase() + item + timeRange.toLowerCase();
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            QueryDao queryDao = getQueryDao(request);
+            CustomPropertiesConfig queryConf = getQueryConf(request);
+            result = queryDao.queryIssueDefect(queryConf, community, timeRange);
+            //redisDao.set(key, result, redisDefaultExpire);
         }
         return result;
     }

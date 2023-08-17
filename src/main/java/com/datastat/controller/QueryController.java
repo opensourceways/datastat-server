@@ -527,4 +527,11 @@ public class QueryController {
         return queryService.queryInnovationItems(request, community);
     } 
 
+    @RequestMapping("/issueDefect")
+    public String queryIssueDefect(HttpServletRequest request,
+                                        @RequestParam(value = "community") String community,
+                                        @RequestParam(value = "timeRange") String timeRange) {
+        return queryService.queryIssueDefect(request, community, timeRange);
+    }
+
 }
