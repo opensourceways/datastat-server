@@ -150,6 +150,7 @@ public class CustomPropertiesConfig {
     private String eurPackagesQuery;
     private String aggGroupCommentQueryStr;
     private String innovationItemAddress;
+    private String issueDefectQueryStr;
 
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
 
@@ -375,5 +376,14 @@ public class CustomPropertiesConfig {
             contributesQueryStr = String.format(getCompanyVersionPrQuery(), versionQueryStr);
         }
         return contributesQueryStr;
+    }
+    
+    public String getAggIssueDefectQueryStr(CustomPropertiesConfig queryConf, String groupField, String timeRange, String issueType) {
+        String group = groupField.equals("company") ? "tag_user_company" : "user_login";
+        String queryJson = getIssueDefectQueryStr();
+        if (queryJson == null) return null;
+        long currentTimeMillis = System.currentTimeMillis();
+        long lastTimeMillis = getPastTime(timeRange);
+        return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, "缺陷", issueType, group);
     }
 }

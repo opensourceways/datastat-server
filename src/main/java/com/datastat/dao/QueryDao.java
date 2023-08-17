@@ -2624,4 +2624,32 @@ public class QueryDao {
         return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
     
+    @SneakyThrows
+    public String queryIssueDefect(CustomPropertiesConfig queryConf, String community, String timeRange) {
+        List<Map<String, String>> companies = getCompanyNameCnEn(env.getProperty("company.name.yaml"), env.getProperty("company.name.local.yaml"));
+        Map<String, String> companyNameCnEn = companies.get(0);
+
+        String issueDefectQueryStr = queryConf.getAggIssueDefectQueryStr(queryConf, "company", timeRange, "缺陷");
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), issueDefectQueryStr);
+        JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+
+        ArrayList<JsonNode> dataList = new ArrayList<>();
+        HashMap<String, Object> dataMap = new HashMap<>();
+        while (buckets.hasNext()) {
+            JsonNode bucket = buckets.next();
+            String companyCn = bucket.get("key").asText();
+            long defectNumber = bucket.get("doc_count").asLong();
+            if (defectNumber == 0) {
+                continue;
+            }
+            String companyEn = companyNameCnEn.getOrDefault(companyCn.trim(), companyCn);
+            dataMap.put("company_en", companyEn);
+            dataMap.put("company_cn", companyCn);
+            dataMap.put("defectNumber", defectNumber);
+            JsonNode resNode = objectMapper.valueToTree(dataMap);
+            dataList.add(resNode);
+        }
+        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+    }
 }
