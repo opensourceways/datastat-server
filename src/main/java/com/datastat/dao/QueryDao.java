@@ -2623,26 +2623,11 @@ public class QueryDao {
         }
         return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
-    
-    @SneakyThrows
-    public String queryIssueDone(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField) {
-        String issueDoneQueryStr = queryConf.getAggIssueQueryStr(queryConf, groupField, timeRange, "done");
-        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), issueDoneQueryStr);
-        JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
-        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
-
-        // 如果按公司排序，那么有中英文切换；如果按照SIG组排序，那么只输出英文名称
-        if (!groupField.equals("company")) {
-            return packageBySig(buckets);
-        } else {
-            return packageByCompany(buckets);
-        }
-    }
 
     @SneakyThrows
-    public String queryIssueCve(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField) {
-        String issueCveQueryStr = queryConf.getAggIssueQueryStr(queryConf, groupField, timeRange, "cve");
-        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), issueCveQueryStr);
+    public String queryAllProjects(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField, String type) {
+        String allProjectQueryStr = queryConf.getAggIssueQueryStr(queryConf, groupField, timeRange, type);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), allProjectQueryStr);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
 
@@ -2656,6 +2641,7 @@ public class QueryDao {
 
     @SneakyThrows
     public String packageByCompany(Iterator<JsonNode> buckets) {
+        // 获取companies变量，保存公司的中英文对应名称
         List<Map<String, String>> companies = getCompanyNameCnEn(env.getProperty("company.name.yaml"), env.getProperty("company.name.local.yaml"));
         Map<String, String> companyNameCnEn = companies.get(0);
         ArrayList<JsonNode> dataList = new ArrayList<>();
@@ -2694,5 +2680,19 @@ public class QueryDao {
             dataList.add(resNode);
         }
         return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+    }
+
+    @SneakyThrows
+    public String queryByProjectName(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField, String projectName, String type) {
+        String projectQueryStr = queryConf.getAggProjectPrQueryStr(queryConf, timeRange, groupField, projectName, type);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), projectQueryStr);
+        JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+       // 如果按公司排序，那么有中英文切换；如果按照SIG组排序，那么只输出英文名称
+        if (!groupField.equals("company")) {
+            return packageBySig(buckets);
+        } else {
+            return packageByCompany(buckets);
+        }
     }
 }

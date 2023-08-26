@@ -15,6 +15,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
+import com.datastat.model.yaml.InnovationItemInfo;
+import com.datastat.model.yaml.InnovationItemYaml;
+import com.datastat.util.YamlUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.*;
@@ -152,6 +155,12 @@ public class CustomPropertiesConfig {
     private String innovationItemAddress;
     private String issueDoneQueryStr;
     private String issueCveQueryStr;
+    private String repoUrlPrefix;
+    private String projectPrQueryStr;
+    private String projectIssueQueryStr;
+    private String projectCommentQueryStr;
+    private String projectIssueCveQueryStr;
+    private String projectIssueDoneQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
 
@@ -383,11 +392,15 @@ public class CustomPropertiesConfig {
         // 判断搜索结果是按照公司进行排序还是按照SIG组进行排序
         String group = groupField.equals("company") ? "tag_user_company" : "sig_names";
         String queryJson = null;
-        if (type.equals("cve")) {
-            queryJson = getIssueCveQueryStr();
-        }
-        if (type.equals("done")) {
-            queryJson = getIssueDoneQueryStr();
+        switch (type) {
+            case "issue_cve":
+                queryJson = getIssueCveQueryStr();
+                break;
+            case "issue_done":
+                queryJson = getIssueDoneQueryStr();
+                break;
+            default:
+                break;
         }
         if (queryJson == null) {
             return null;
@@ -395,5 +408,64 @@ public class CustomPropertiesConfig {
         long currentTimeMillis = System.currentTimeMillis();
         long lastTimeMillis = getPastTime(timeRange);
         return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, group);
+    }
+
+    public String getAggProjectPrQueryStr(CustomPropertiesConfig queryConf, String timeRange, String groupField, String projectName, String contributeType) {
+        YamlUtil yamlUtil = new YamlUtil();
+        InnovationItemYaml items = yamlUtil.readLocalYaml(queryConf.getInnovationItemAddress(), 
+        InnovationItemYaml.class);
+        List<String> repos = new ArrayList<>();
+        for (InnovationItemInfo item : items.getInnovation_projects()) {
+            String name = item.getProject_name().trim();
+            if (projectName.equals(name)) {
+                repos.addAll(item.getRepos());
+                break;
+            }
+        }
+        // 判断根据项目找到的仓库是否存在
+        if (repos.size() == 0) {
+            return "";
+        }
+        // 拼接查询仓库的字符串
+        StringBuilder repoSb = new StringBuilder("(\\\"");
+        String url = queryConf.getRepoUrlPrefix();
+        for (int i = 0; i < repos.size(); i++) {
+            repoSb.append(url);
+            repoSb.append(repos.get(i));
+            repoSb.append("\\\"");
+            if (i < repos.size() - 1) {
+                repoSb.append(", \\\"");
+            }
+        }
+        repoSb.append(")");
+        String repoStr = repoSb.toString();
+        // 拼接查询项目字符串
+        String queryJson = null;
+        switch (contributeType) {
+            case "pr":
+                queryJson = getProjectPrQueryStr();
+                break;
+            case "issue":
+                queryJson = getProjectIssueQueryStr();
+                break;
+            case "comment":
+                queryJson = getProjectCommentQueryStr();
+                break;
+            case "issue_cve":
+                queryJson = getProjectIssueCveQueryStr();
+                break;
+            case "issue_done":
+                queryJson = getProjectIssueDoneQueryStr();
+                break;
+            default:
+                break;
+        }
+        if (queryJson == null) {
+            return null;
+        }
+        long currentTimeMillis = System.currentTimeMillis();
+        long lastTimeMillis = getPastTime(timeRange);
+        String group = groupField.equals("company") ? "tag_user_company" : "sig_names";
+        return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, repoStr, group);
     }
 }
