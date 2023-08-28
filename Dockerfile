@@ -20,6 +20,8 @@ RUN wget https://mirrors.tuna.tsinghua.edu.cn/apache/maven/maven-3/3.8.8/binarie
 ENV MAVEN_HOEM=/var/lib/ds/apache-maven-3.8.8
 ENV PATH=$MAVEN_HOEM/bin:$PATH
 
+COPY settings.xml ${MAVEN_HOEM}/conf/settings.xml
+
 RUN git clone -b ${BRANCH} https://github.com/opensourceways/datastat-server && \
         cd datastat-server && \
         mvn clean install package -Dmaven.test.skip && \
