@@ -2635,32 +2635,64 @@ public class QueryDao {
         if (!groupField.equals("company")) {
             return packageBySig(buckets);
         } else {
-            return packageByCompany(buckets);
+            return packageByCompany(buckets, queryConf);
         }
     }
 
     @SneakyThrows
-    public String packageByCompany(Iterator<JsonNode> buckets) {
+    public String packageByCompany(Iterator<JsonNode> buckets, CustomPropertiesConfig queryConf) {
         // 获取companies变量，保存公司的中英文对应名称
         List<Map<String, String>> companies = getCompanyNameCnEn(env.getProperty("company.name.yaml"), env.getProperty("company.name.local.yaml"));
         Map<String, String> companyNameCnEn = companies.get(0);
-        ArrayList<JsonNode> dataList = new ArrayList<>();
+        Map<String, String> companyNameAlCn = companies.get(1);
+        List<Map<String, Object>> dataList = new ArrayList<>();
         HashMap<String, Object> dataMap = new HashMap<>();
         while (buckets.hasNext()) {
             JsonNode bucket = buckets.next();
-            String companyCn = bucket.get("key").asText();
+            String company = bucket.get("key").asText();
             long doneNumber = bucket.get("doc_count").asLong();
             if (doneNumber == 0) {
                 continue;
             }
-            String companyEn = companyNameCnEn.getOrDefault(companyCn.trim(), companyCn);
+            String companyCn = companyNameAlCn.getOrDefault(company.trim(), company.trim());
+            String companyEn = companyNameCnEn.getOrDefault(company.trim(), companyCn);
             dataMap.put("company_en", companyEn);
             dataMap.put("company_cn", companyCn);
             dataMap.put("contribute", doneNumber);
-            JsonNode resNode = objectMapper.valueToTree(dataMap);
-            dataList.add(resNode);
+            dataList.add(new HashMap<>(dataMap));
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        // 过滤返回结果
+        List<JsonNode> newList = filterData(dataList, queryConf);
+        return resultJsonStr(200, objectMapper.valueToTree(newList), "ok");
+    }
+
+    @SneakyThrows
+    public List<JsonNode> filterData(List<Map<String, Object>> dataList, CustomPropertiesConfig queryConf) {
+        List<String> claCompanies = queryClaCompany(queryConf.getClaCorporationIndex());
+        List<JsonNode> newList = new ArrayList<>();
+        long independent = 0;
+        for (Map<String, Object> data : dataList) {
+            String company = (String) data.get("company_cn");
+            if (!claCompanies.contains(company) ||
+                    company.equals("深圳易宝软件") ||
+                    company.contains("华为合作方") ||
+                    company.equalsIgnoreCase("openeuler")) {
+                independent += (long) data.get("contribute");
+                continue;
+            }
+            if (company.contains("华为技术有限公司")) {
+                continue;
+            }
+            JsonNode resNode = objectMapper.valueToTree(data);
+            newList.add(resNode);
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("company_cn", "个人贡献者");
+        data.put("company_en", "independent");
+        data.put("contribute", independent);
+        JsonNode resNode = objectMapper.valueToTree(data);
+        newList.add(resNode);
+        return newList;
     }
 
     @SneakyThrows
@@ -2692,7 +2724,7 @@ public class QueryDao {
         if (!groupField.equals("company")) {
             return packageBySig(buckets);
         } else {
-            return packageByCompany(buckets);
+            return packageByCompany(buckets, queryConf);
         }
     }
 }
