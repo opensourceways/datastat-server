@@ -560,4 +560,13 @@ public class QueryController {
             @RequestParam(value = "sigName") String sigName) {
         return queryService.querySigDefect(request, community, timeRange, sigName);
     }
+
+    @RequestMapping(value = "/test_rabbit")
+    public String querytestRabbit(HttpServletRequest request,
+            @RequestParam(value = "community") String community,
+            @RequestParam(value = "timeRange") String timeRange,
+            @RequestParam(value = "sigName") String sigName) {
+        // return queryService.querySigDefect(request, community, timeRange, sigName);
+      return "ok";
+    }
 }
