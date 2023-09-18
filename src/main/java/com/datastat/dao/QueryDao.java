@@ -412,7 +412,7 @@ public class QueryDao {
             String timeRange, String version, String repo, String sig) {
         // 展示特征
         if (contributeType.equals("feature")) {
-            return getCompanyFeature(queryConf, community, version);
+            return getVersionFeature(queryConf, community, version, "company");
         }
         List<String> claCompanies = queryClaCompany(queryConf.getClaCorporationIndex());
         List<Map<String, String>> companies = getCompanyNameCnEn(env.getProperty("company.name.yaml"), env.getProperty("company.name.local.yaml"));
@@ -2667,6 +2667,18 @@ public class QueryDao {
     }
 
     @SneakyThrows
+    public String querySigContributors(CustomPropertiesConfig queryConf, String community, String type, String timeRange) {
+        String sigContributeQueryStr = queryConf.getAggSigContributeQueryStr(queryConf, type, timeRange);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), sigContributeQueryStr);
+        JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+        List<Map<String, Object>> res = new ArrayList<>();
+        // 按照SIG组排序
+        res = packageBySig(buckets);
+        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
+
+    @SneakyThrows
     public List<Map<String, Object>> packageByCompany(Iterator<JsonNode> buckets, CustomPropertiesConfig queryConf) {
         // 获取companies变量，保存公司的中英文对应名称
         List<Map<String, String>> companies = getCompanyNameCnEn(env.getProperty("company.name.yaml"),
@@ -2761,7 +2773,7 @@ public class QueryDao {
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
         List<Map<String, Object>> res = new ArrayList<>();
-       // 如果按公司排序，那么有中英文切换；如果按照SIG组排序，那么只输出英文名称
+        // 如果按公司排序，那么有中英文切换；如果按照SIG组排序，那么只输出英文名称
         if (!groupField.equals("company")) {
             res = packageBySig(buckets);
         } else {
@@ -2862,13 +2874,70 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    public String getCompanyFeature(CustomPropertiesConfig queryConf, String community, String version) {
-        String companyFeature = queryConf.getAggCompanyFeatureQueryStr(queryConf, version);
+    public String getVersionFeature(CustomPropertiesConfig queryConf, String community, String version, String groupField) {
+        String companyFeature = queryConf.getAggCompanyFeatureQueryStr(queryConf, version, groupField);
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeFeatureIndex(), companyFeature);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
-        List<Map<String, Object>> res = packageByCompany(buckets, queryConf);
+        // 如果按公司排序，那么有中英文切换；如果按照SIG组排序，那么只输出英文名称
+        List<Map<String, Object>> res = new ArrayList<>();
+        if (!groupField.equals("company")) {
+            res = packageBySig(buckets);
+        } else {
+            res = packageByCompany(buckets, queryConf);
+        }
         return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
+
+    @SneakyThrows
+    public String getVersionSig(CustomPropertiesConfig queryConf, String community, String type, String version) {
+        String sigPr = queryConf.getAggSigVersionQuery(queryConf, type, version);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeVersionIndex(), sigPr);
+        JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+        List<Map<String, Object>> res = packageBySig(buckets);
+        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
+
+    @SneakyThrows
+    public String queryCompanyOrSigContribute(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField, String projectName, String type, String version) {
+        // 项目范围“openEuler版本”有2个指标,getCompanyFeature()方法统计1个指标：feature，同时支持按照公司或者sig组排名。
+        if ("feature".equals(type) && version != null) {
+            return getVersionFeature(queryConf, community, version, groupField);
+        }
+        // 项目范围“openEuler版本”有2个指标,queryCompanyContributors()方法统计1个指标：pr，且按公司排名。
+        if ("pr".equals(type) && version != null && "company".equals(groupField)) {
+            return queryCompanyContributors(queryConf, community, type, timeRange, version, null, null);
+        }
+        // 项目范围“openEuler版本”有2个指标,getVersionSig()方法统计1个指标：pr，且按sig组排名。
+        if ("pr".equals(type) && version != null && "sig".equals(groupField)) {
+            return getVersionSig(queryConf, community, type, version);
+        }
+
+        // 项目范围“全部项目”有5个指标，queryCompanyContributors()方法统计了3个指标：pr,issue,comment，且按照公司排名
+        if (("pr".equals(type) || "issue".equals(type) || "comment".equals(type)) && "company".equals(groupField) && "all".equals(projectName)) {
+            return queryCompanyContributors(queryConf, community, type, timeRange, null, null, null);
+        }
+        // 项目范围“全部项目”有5个指标，querySigContributors()方法统计了3个指标：pr,issue,comment，且按照sig组排名
+        if (("pr".equals(type) || "issue".equals(type) || "comment".equals(type)) && "sig".equals(groupField) && "all".equals(projectName)) {
+            return querySigContributors(queryConf, community, type, timeRange);
+        }
+        // 项目范围“全部项目”有5个指标，queryAllProjects()方法统计了2个指标：issue闭环，cve闭环，同时支持按公司或者sig组排名
+        if (("issue_cve".equals(type) || "issue_done".equals(type)) && "all".equals(projectName)) {
+            return queryAllProjects(queryConf, community, timeRange, groupField, type);
+        }
+
+        // 项目范围“全部创新项目”，queryAllInnoItems()方法统计了5个指标，同时支持按公司或者sig组排名
+        if ("allInnoItems".equals(projectName)) {
+            return queryAllInnoItems(queryConf, community, timeRange, groupField, type);
+        }
+
+        // 项目范围“单个创新项目”，queryByProjectName()方法统计了5个指标，同时支持按公司或者sig组排名
+        if (projectName != null && !"allInnoItems".equals(projectName)) {
+            return queryByProjectName(queryConf, community, timeRange, groupField, projectName, type);
+        }
+
+        return "200";
     }
 
 }

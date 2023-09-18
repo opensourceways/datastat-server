@@ -1248,4 +1248,18 @@ public class QueryService {
         }
         return result;
     }
+
+    public String queryCompanyOrSigContribute(HttpServletRequest request, String community, String timeRange, String groupField, String projectName, String type, String version) {
+        if (!checkCommunity(community)) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        String key = "companyOrSigContribute" + StringUtils.lowerCase(community) + StringUtils.lowerCase(timeRange) +
+            StringUtils.lowerCase(groupField) + StringUtils.lowerCase(projectName) +StringUtils.lowerCase(type) +StringUtils.lowerCase(version);
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            QueryDao queryDao = getQueryDao(request);
+            CustomPropertiesConfig queryConf = getQueryConf(request);
+            result = queryDao.queryCompanyOrSigContribute(queryConf, community, timeRange, groupField, projectName, type, version);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

@@ -165,6 +165,8 @@ public class CustomPropertiesConfig {
     private String sigIssueQueryStr;
     private String sigCveQueryStr;
     private String companyFeatureQueryStr;
+    private String giteeAggSigQueryStr;
+    private String sigVersionPrQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
 
@@ -392,6 +394,17 @@ public class CustomPropertiesConfig {
         return contributesQueryStr;
     }
 
+    public String getAggSigContributeQueryStr(CustomPropertiesConfig queryConf, String type, String timeRange) {
+        String queryJson = getGiteeAggSigQueryStr();
+        long currentTimeMillis = System.currentTimeMillis();
+        long lastTimeMillis = getPastTime(timeRange);
+        String typeJson = contributeTypeMap.getOrDefault(type.toLowerCase(), "");
+        if (typeJson == null) {
+            return "";
+        }
+        return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, typeJson);
+    }
+
     public String getAggIssueQueryStr(CustomPropertiesConfig queryConf, String groupField, String timeRange, String type) {
         // 判断搜索结果是按照公司进行排序还是按照SIG组进行排序
         String group = groupField.equals("company") ? "tag_user_company" : "sig_names";
@@ -520,8 +533,19 @@ public class CustomPropertiesConfig {
         return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, issueRange, sigName);
     }
 
-    public String getAggCompanyFeatureQueryStr(CustomPropertiesConfig queryConf, String version) {
+    public String getAggCompanyFeatureQueryStr(CustomPropertiesConfig queryConf, String version, String groupField) {
         String queryJson = getCompanyFeatureQueryStr();
+        String verisonQuery = "all".equals(version) ? "*" : version;
+        if (queryJson == null) {
+            return null;
+        }
+        // 判断搜索结果是按照公司进行排序还是按照SIG组进行排序
+        String group = groupField.equals("company") ? "tag_user_company" : "sig_names";
+        return queryStrFormat(queryJson, verisonQuery, group);
+    }
+
+    public String getAggSigVersionQuery(CustomPropertiesConfig queryConf, String type, String version) {
+        String queryJson = getSigVersionPrQueryStr();
         String verisonQuery = "all".equals(version) ? "*" : version;
         if (queryJson == null) {
             return null;
