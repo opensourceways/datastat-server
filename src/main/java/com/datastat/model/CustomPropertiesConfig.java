@@ -252,15 +252,11 @@ public class CustomPropertiesConfig {
     }
 
     public String getAggCommentQueryStr(CustomPropertiesConfig queryConf, String groupField, String timeRange, String repo) {
+        String group = groupField.equals("company") ? "tag_user_company" : "user_login";
         String queryJson = getAggGroupCommentQueryStr();
-        if (queryJson == null) return "";
+        if (queryJson == null) return null;
         long currentTimeMillis = System.currentTimeMillis();
         long lastTimeMillis = getPastTime(timeRange);
-        // 判断搜索结果是按照公司进行排序还是按照SIG组进行排序
-        String group = groupFieldMap.getOrDefault(groupField.toLowerCase(), "");
-        if (StringUtils.isBlank(group)) {
-            return "";
-        }
         return queryStrFormat(queryJson, lastTimeMillis, currentTimeMillis, group);
     }
 
