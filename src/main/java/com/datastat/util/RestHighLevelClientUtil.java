@@ -13,7 +13,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.Nullable;
+import org.elasticsearch.core.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
