@@ -321,21 +321,33 @@ public class QueryService {
         return result;
     }
 
-    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy, String community, String user, String year) {
+    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy) {
         QueryDao queryDao = getQueryDao(request);
-        CustomPropertiesConfig queryConf = getQueryConf(request);
-        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community, user, year);
+        String referer = request.getHeader("Referer");
+        String community = null;
+        try {
+            community = referer.split("\\.")[1];
+        } catch (Exception e) {
+            logger.error("exception", e);
+            return resultJsonStr(404, "error", "Referer error");
+        }      
+        CustomPropertiesConfig queryConf = getQueryConf(community);
+        
+        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community);
     }
 
-    public String queryNewYear(HttpServletRequest request, String community, String user, String year) {
+    public String queryNewYearMonthCount(HttpServletRequest request, String oauth2_proxy) {
         QueryDao queryDao = getQueryDao(request);
-        return queryDao.queryNewYear(community, user, year);
-    }
-
-    public String queryNewYearMonthCount(HttpServletRequest request, String user) {
-        QueryDao queryDao = getQueryDao(request);
-        CustomPropertiesConfig queryConf = getQueryConf(request);
-        return queryDao.queryNewYearMonthCount(queryConf, user);
+        String referer = request.getHeader("Referer");
+        String community = null;
+        try {
+            community = referer.split("\\.")[1];
+        } catch (Exception e) {
+            logger.error("exception", e);
+            return resultJsonStr(404, "error", "Referer error");
+        }      
+        CustomPropertiesConfig queryConf = getQueryConf(community);
+        return queryDao.queryNewYearMonthCount(queryConf, oauth2_proxy);
     }
 
     public String queryBugQuestionnaire(HttpServletRequest request, String community, String lastCursor, String pageSize) {
@@ -757,12 +769,6 @@ public class QueryService {
 
             QueryDao queryDao = getQueryDao(request);
             CustomPropertiesConfig queryConf = getQueryConf(request);
-
-            try {
-                logger.info("userid::{}::email::{}::hook_url::{}::", userRes.get("gitee_id"), userRes.get("email"), action.get("html_url"));
-            } catch (Exception e) {
-            }
-
             queryDao.putGiteeHookUser(queryConf, userSet);
             return resultJsonStr(200, "user_count", userSet.size(), "success");
         } catch (Exception e) {
