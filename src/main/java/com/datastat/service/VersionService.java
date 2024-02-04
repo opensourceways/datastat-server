@@ -94,10 +94,10 @@ public class VersionService {
                 String responseBody = response.getResponseBody(StandardCharsets.UTF_8);
                 redisDao.set(community + redisKey, responseBody, expire);
                 Map map = assemblyData(repo, responseBody, currentPage, pageSize);
-                return resultJsonStr(200, map.get("data"), map.get("total"), "SUCCESS");
+                return resultJsonStr(200, objectMapper.valueToTree(map.get("data")), map.get("total"), "SUCCESS");
             } else {
                 Map map = assemblyData(repo, data, currentPage, pageSize);
-                return resultJsonStr(200, map.get("data"), map.get("total"), "SUCCESS");
+                return resultJsonStr(200, objectMapper.valueToTree(map.get("data")), map.get("total"), "SUCCESS");
             }
         } catch (Exception e) {
             return resultJsonStr(400, null, 0, "Failed");

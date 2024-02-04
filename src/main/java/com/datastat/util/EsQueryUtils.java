@@ -208,8 +208,7 @@ public class EsQueryUtils {
             }
         }
 
-        String data = objectMapper.valueToTree(list).toString();
-        return resultJsonStr(200, data, "ok", Map.of("totalCount", totalCount));
+        return resultJsonStr(200, list, "ok", Map.of("totalCount", totalCount));
     }
 
     public String esScrollFromId(RestHighLevelClient client, String item, int pageSize, String indexName, String lastCursor, SearchSourceBuilder sourceBuilder) {
@@ -241,14 +240,12 @@ public class EsQueryUtils {
             }
         } catch (Exception ex) {
             list.clear();
-            String s = objectMapper.valueToTree(list).toString();
-            return resultJsonStr(200, s, ReturnCode.RC400.getMessage(), Map.of("cursor", endCursor));
+            return resultJsonStr(200, list, ReturnCode.RC400.getMessage(), Map.of("cursor", endCursor));
         }
         if (endCursor.equals(lastCursor)) list.clear();
         if (list.size() > pageSize) list.remove(0);
 
-        String s = objectMapper.valueToTree(list).toString();
-        return resultJsonStr(200, s, "ok", Map.of("cursor", endCursor, "totalCount", totalCount));
+        return resultJsonStr(200, list, "ok", Map.of("cursor", endCursor, "totalCount", totalCount));
     }
 
     public String esFromId(RestHighLevelClient client, String item, String lastCursor, int pageSize, String indexName) {
@@ -284,14 +281,12 @@ public class EsQueryUtils {
             }
         } catch (Exception ex) {
             list.clear();
-            String s = objectMapper.valueToTree(list).toString();
-            return resultJsonStr(200, s, ReturnCode.RC400.getMessage(), Map.of("cursor", endCursor));
+            return resultJsonStr(200, list, ReturnCode.RC400.getMessage(), Map.of("cursor", endCursor));
         }
         if (endCursor.equals(lastCursor)) list.clear();
         if (list.size() > pageSize) list.remove(0);
 
-        String s = objectMapper.valueToTree(list).toString();
-        return resultJsonStr(200, s, "ok", Map.of("cursor", endCursor, "totalCount", totalCount));
+        return resultJsonStr(200, list, "ok", Map.of("cursor", endCursor, "totalCount", totalCount));
     }
 
 

@@ -1291,4 +1291,28 @@ public class QueryService {
         }
         return result;
     }
+
+    public String queryModelFoundry(HttpServletRequest request, String repo) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        String key = "modelfoundrycownload_repo_" + repo;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.queryModelFoundry(queryConf, repo);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
+
+    public String queryModelFoundryTrends(HttpServletRequest request, String repo) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        String key = "modelfoundrycownload_repo_trends_" + repo;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.queryModelFoundryTrends(queryConf, repo);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

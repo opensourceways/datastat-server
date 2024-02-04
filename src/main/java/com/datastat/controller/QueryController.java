@@ -589,4 +589,16 @@ public class QueryController {
         return queryService.querySigContribute(request, community, timeRange, projectName, type, version);
     }
 
+    @RequestMapping(value = "/modelfoundry/download")
+    public String queryModelFoundry(HttpServletRequest request,
+            @RequestParam(value = "repo_id") String repo) {
+        return queryService.queryModelFoundry(request, repo);
+    }
+
+    @RequestMapping(value = "/modelfoundry/download/trends")
+    public String queryModelFoundryTrends(HttpServletRequest request,
+            @RequestParam(value = "repo_id") String repo) {
+        return queryService.queryModelFoundryTrends(request, repo);
+    }
+
 }

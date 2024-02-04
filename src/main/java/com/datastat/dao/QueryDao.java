@@ -26,6 +26,7 @@ import com.datastat.model.yaml.*;
 import com.datastat.result.ReturnCode;
 import com.datastat.util.*;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -596,7 +597,8 @@ public class QueryDao {
     public String queryBuildCheckInfo(CustomPropertiesConfig queryConf, BuildCheckInfoQueryVo queryBody, String item, String lastCursor, String pageSize) {
         RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
         SearchSourceBuilder queryResultSourceBuilder = assembleResultSourceBuilder("update_at", queryBody);
-        pageSize = pageSize == null ? "5000" : pageSize;
+        pageSize = pageSize == null ? "1000" : pageSize;
+        pageSize = Integer.parseInt(pageSize) > 1000 ? "1000" : pageSize;
         String resultInfo = esQueryUtils.esScrollFromId(restHighLevelClient, item, Integer.parseInt(pageSize),
                 queryConf.getBuildCheckResultIndex(), lastCursor, queryResultSourceBuilder);
         SearchSourceBuilder mistakeSourceBuilder = assembleMistakeSourceBuilder("update_at", queryBody);
@@ -647,7 +649,7 @@ public class QueryDao {
         resMap.put("data", finalResultJSONArray);
         resMap.put("totalCount", totalCount);
         resMap.put("cursor", cursor);
-        resMap.put("msg", "ok");
+        resMap.put("msg", "susscess");
         resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
         return objectMapper.valueToTree(resMap).toString();
     }
@@ -3061,5 +3063,60 @@ public class QueryDao {
         } else {
             return resultJsonStr(400, null, "incorrect input parameters.");
         }
+    }
+
+    @SneakyThrows
+    public String queryModelFoundry(CustomPropertiesConfig queryConf, String repo) {
+        String query = String.format(queryConf.getModelFoundryDownloadQueryStr(), 0, System.currentTimeMillis(), repo);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getModelFoundryIndex(), query);
+        Response response = future.get();
+        Double count = 0.0;
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+        while (buckets.hasNext()) {
+            JsonNode bucket = buckets.next();
+            count += bucket.get("res").get("value").asDouble();
+        }
+        return resultJsonStr(statusCode, count, statusText);
+    }
+
+    @SneakyThrows
+    public String queryModelFoundryTrends(CustomPropertiesConfig queryConf, String repo) {
+        long currentTimeMillis = System.currentTimeMillis();
+        Calendar alendar = Calendar.getInstance();
+        alendar.setTime(new Date());
+        alendar.add(Calendar.YEAR, -1);
+        long pastTimeMillis = alendar.getTimeInMillis();
+        String query = String.format(queryConf.getModelFoundryDownloadTrendQueryStr(), pastTimeMillis, currentTimeMillis, repo);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getModelFoundryIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        ArrayList<HashMap<String, Object>> resList = parseModelFoundryTrends(dataNode);
+        return resultJsonStr(statusCode, objectMapper.valueToTree(resList), statusText);
+    }
+
+    @SneakyThrows
+    protected ArrayList<HashMap<String, Object>> parseModelFoundryTrends(JsonNode dataNode){
+        Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
+        ArrayList<HashMap<String, Object>> resList = new ArrayList<>();
+        while (buckets.hasNext()) {
+            JsonNode bucket = buckets.next();
+            Long period = bucket.get("key").asLong();
+            Double cur = 0.0;
+            if (bucket.has("res")) {
+                cur = bucket.get("res").get("value").asDouble();
+            }
+            HashMap<String, Object> tmpMap = new HashMap<>();
+            tmpMap.put("date", period);
+            tmpMap.put("download", Math.round(cur));
+            resList.add(tmpMap);
+        }
+        return resList;
     }
 }

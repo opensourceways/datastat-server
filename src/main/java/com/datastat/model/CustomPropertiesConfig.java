@@ -82,6 +82,7 @@ public class CustomPropertiesConfig {
     private String userTagIndex;
     private String npsIndex;
     private String giteeFeatureIndex;
+    private String modelFoundryIndex;
 
     // -- query str --
     private String extOsQueryStr;
@@ -167,7 +168,9 @@ public class CustomPropertiesConfig {
     private String sigCveQueryStr;
     private String companyFeatureQueryStr;
     private String giteeAggSigQueryStr;
-    private String sigVersionPrQueryStr;  
+    private String sigVersionPrQueryStr;
+    private String modelFoundryDownloadQueryStr;
+    private String modelFoundryDownloadTrendQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();
