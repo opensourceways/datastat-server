@@ -3379,8 +3379,9 @@ public class QueryDao {
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), queryConf.getCommunityRepoQueryStr());
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
         Iterator<JsonNode> hits = dataNode.get("hits").get("hits").elements();
+        
         String repoListStr = queryConf.getCoreRepo();
-
+  
         ArrayList<HashMap<String, String>> res = new ArrayList<>();
         while (hits.hasNext()) {
             JsonNode hit = hits.next();
@@ -3390,23 +3391,28 @@ public class QueryDao {
                 put("isCoreRepo", repoListStr.contains(repository) ? "1" : "0");
             }});
         }
-
-        Collections.sort(res, new Comparator<Map<String, String>>() {
+  
+        coreReposSort(res);
+  
+        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+    }
+  
+  
+    public void coreReposSort(ArrayList<HashMap<String, String>> repos){
+        Collections.sort(repos, new Comparator<Map<String, String>>() {
             @Override
-            public int compare(Map<String, String> o1, Map<String, String> o2) {
-                String isCoreRepo1 = o1.get("isCoreRepo");
-                String isCoreRepo2 = o2.get("isCoreRepo");
-                String repo1 = o1.get("repo");
-                String repo2 = o2.get("repo");
-        
+            public int compare(Map<String, String> repo1, Map<String, String> repo2) {
+                String isCoreRepo1 = repo1.get("isCoreRepo");
+                String isCoreRepo2 = repo2.get("isCoreRepo");
+                String repoName1 = repo1.get("repo");
+                String repoName2 = repo2.get("repo");
+
                 if (isCoreRepo1.equals(isCoreRepo2)) {
-                    return repo1.compareToIgnoreCase(repo2);
+                    return repoName1.compareToIgnoreCase(repoName2);
                 } else {
                     return isCoreRepo2.compareToIgnoreCase(isCoreRepo1);
                 }
             }
-        });
-
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        }); 
     }
 }
