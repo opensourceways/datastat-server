@@ -3391,6 +3391,22 @@ public class QueryDao {
             }});
         }
 
+        Collections.sort(res, new Comparator<Map<String, String>>() {
+            @Override
+            public int compare(Map<String, String> o1, Map<String, String> o2) {
+                String isCoreRepo1 = o1.get("isCoreRepo");
+                String isCoreRepo2 = o2.get("isCoreRepo");
+                String repo1 = o1.get("repo");
+                String repo2 = o2.get("repo");
+        
+                if (isCoreRepo1.equals(isCoreRepo2)) {
+                    return repo1.compareToIgnoreCase(repo2);
+                } else {
+                    return isCoreRepo2.compareToIgnoreCase(isCoreRepo1);
+                }
+            }
+        });
+
         return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 }
