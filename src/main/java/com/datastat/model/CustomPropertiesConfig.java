@@ -193,6 +193,7 @@ public class CustomPropertiesConfig {
     private String isvCountQuery;
     private String repoDeveloperQueryStr;
     private String viewCountQueryStr;
+    private String coreRepo;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();

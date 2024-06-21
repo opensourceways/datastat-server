@@ -14,6 +14,10 @@ package com.datastat.config;
 import com.datastat.dao.QueryDao;
 import com.datastat.model.CustomPropertiesConfig;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -32,7 +36,15 @@ public class OpenGaussConfig extends CustomPropertiesConfig {
     @Override
     public String getAggCountQueryStr(CustomPropertiesConfig queryConf, String groupField, String contributeType, String timeRange, String community, String repo, String sig) {
         String queryJson = groupField.equals("company") ? queryConf.getGiteeAggCompanyQueryStr() : queryConf.getGiteeAggUserQueryStr();
-        repo = repo == null ? "*" : String.format(env.getProperty("gitee.url"), repo);
+        if (repo == null || repo == "") {
+            repo = "*";
+        } else if (repo.equals("coreRepo")) {
+            String repoListStr = queryConf.getCoreRepo();
+            ArrayList<String> repoList = new ArrayList<>(Arrays.asList(repoListStr.split(",")));
+            repo = convertList2QueryStr(repoList);
+        } else {
+            repo = String.format(env.getProperty("gitee.url"), repo);
+        }
 
         return getQueryStrByType(contributeType, queryJson, timeRange, repo);
     }

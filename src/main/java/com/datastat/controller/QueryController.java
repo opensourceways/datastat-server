@@ -679,4 +679,8 @@ public class QueryController {
         return queryService.queryViewCount(request, path);
     }
 
+    @RequestMapping("/community/coreRepos")
+    public String queryCoreRepos(HttpServletRequest request, @RequestParam(value = "community") String community) {
+        return queryService.queryCommunityCoreRepos(request, community);
+    }
 }
