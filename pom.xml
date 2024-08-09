@@ -221,6 +221,7 @@
             <artifactId>tomcat-embed-websocket</artifactId>
             <version>10.1.25</version>
         </dependency>
+        
     </dependencies>
 
     <build>
@@ -267,4 +268,3 @@
     </pluginRepositories>
 
 </project>
-

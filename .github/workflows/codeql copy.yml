@@ -1,0 +1,42 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  analyze:
+    name: Analyze Java Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: java
+        build-mode: none
+
+    # - name: Perform CodeQL Analysis
+    #   uses: github/codeql-action/analyze@v3
+    #   with:
+    #     category: "/language:java"
+
+    # - name: Action to run java checkstyle
+    #   uses: nitinsh99/checkstyle-action@1.0.0
+
+    - name: Upload CodeQL results
+      uses: actions/upload-artifact@v2
+      with:
+        name: codeql-results
+        path: /home/runner/work/_temp/codeql_results
