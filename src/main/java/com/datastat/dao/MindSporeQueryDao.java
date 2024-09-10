@@ -19,25 +19,34 @@ import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Response;
 import org.springframework.stereotype.Repository;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Repository("mindsporeDao")
 public class MindSporeQueryDao extends QueryDao {
+    public static final int HTTP_STATUS_CODE_SUCCESS = 200;
+    public static final int HTTP_STATUS_CODE_NOT_FOUND = 404;
+
     @SneakyThrows
     @Override
-    public String querySigName(CustomPropertiesConfig queryConf, String community, String lang) {
-        lang = lang == null ? "zh" : lang;
-        HashMap<String, Object> res = getSigFromYaml(queryConf, lang);
+    public String querySigName(final CustomPropertiesConfig queryConf, final String community, final String lang) {
+        String defaultLang = lang == null ? "zh" : lang;
+        HashMap<String, Object> res = getSigFromYaml(queryConf, defaultLang);
         HashMap<String, Object> resData = new HashMap<>();
         resData.put("name", res.get("name"));
         resData.put("description", res.get("description"));
         resData.put("SIG_list", res.get("SIG list"));
         HashMap<String, Object> resMap = new HashMap<>();
-        resMap.put("code", 200);
+        resMap.put("code", HTTP_STATUS_CODE_SUCCESS);
         resMap.put("data", resData);
         resMap.put("msg", "success");
         resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
@@ -46,8 +55,8 @@ public class MindSporeQueryDao extends QueryDao {
 
     @SneakyThrows
     @Override
-    public String querySigs(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, queryConf.getSigQueryStr(), "Not Found");
+    public String querySigs(final CustomPropertiesConfig queryConf, final String item) {
+        return resultJsonStr(HTTP_STATUS_CODE_NOT_FOUND, item, queryConf.getSigQueryStr(), "Not Found");
     }
 
     private HashMap<String, Object> getSigFromYaml(CustomPropertiesConfig queryConf, String lang) {
@@ -73,7 +82,8 @@ public class MindSporeQueryDao extends QueryDao {
 
     @SneakyThrows
     @Override
-    public String getEcosystemRepoInfo(CustomPropertiesConfig queryConf, String ecosystemType, String lang, String sortOrder) {
+    public String getEcosystemRepoInfo(final CustomPropertiesConfig queryConf, final String ecosystemType,
+          final String lang, final String sortOrder) {
         String index = queryConf.getEcosystemRepoIndex();
         String queryJson = queryConf.getEcosystemRepoQuery();
         String queryStr = String.format(queryJson, ecosystemType, lang, sortOrder);
@@ -88,17 +98,17 @@ public class MindSporeQueryDao extends QueryDao {
             JsonNode res = bucket.get("_source");
             resList.add(res);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(resList), "ok");
+        return resultJsonStr(HTTP_STATUS_CODE_SUCCESS, objectMapper.valueToTree(resList), "ok");
     }
 
     @SneakyThrows
     @Override
-    public String getSigReadme(CustomPropertiesConfig queryConf, String sig, String lang) {
-        lang = lang == null ? "zh" : lang;
+    public String getSigReadme(final CustomPropertiesConfig queryConf, final String sig, final String lang) {
+        String defaultLang = lang == null ? "zh" : lang;
         String urlStr = "";
-        HashMap<String, Object> sigInfo = getSigFromYaml(queryConf, lang);
-        ArrayList<HashMap<String, String>> SigList = (ArrayList<HashMap<String, String>>) sigInfo.get("SIG list");
-        for (HashMap<String, String> siginfo : SigList) {
+        HashMap<String, Object> sigInfo = getSigFromYaml(queryConf, defaultLang);
+        ArrayList<HashMap<String, String>> sigList = (ArrayList<HashMap<String, String>>) sigInfo.get("SIG list");
+        for (HashMap<String, String> siginfo : sigList) {
             if (sig.equalsIgnoreCase(siginfo.get("name"))) {
                 urlStr = siginfo.get("links").replace("/blob/", "/raw/").replace("/tree/", "/raw/");
             }
@@ -116,29 +126,28 @@ public class MindSporeQueryDao extends QueryDao {
         while ((current = in.readLine()) != null) {
             res += current + '\n';
         }
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return resultJsonStr(HTTP_STATUS_CODE_SUCCESS, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
     @Override
-    public String queryContributors(CustomPropertiesConfig queryConf, String item) {
+    public String queryContributors(final CustomPropertiesConfig queryConf, final String item) {
         int count = 0;
         String[] indexes = queryConf.getAggContributorsIndex().split(";");
         String[] queries = queryConf.getAggContributorsQueryStr().split(";");
         String[] codeQueries = queryConf.getAggCodeContributorsQueryStr().split(";");
-        
         count = queryCountContributors(indexes, queries) + queryCountContributors(indexes, codeQueries);
-        return resultJsonStr(200, item, count, "ok");
+        return resultJsonStr(HTTP_STATUS_CODE_SUCCESS, item, count, "ok");
     }
 
     @SneakyThrows
-    public int queryCountContributors(String[] indexes, String queries[]) {
+    public int queryCountContributors(final String[] indexes, final String queries[]) {
         int count = 0;
         for (int i = 0; i < indexes.length; i++) {
             ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, indexes[i], queries[i]);
             String resBody = future.get().getResponseBody(UTF_8);
             JsonNode dataNode = objectMapper.readTree(resBody);
-            JsonNode buckets = dataNode.get("aggregations").get("group_field").get("buckets");       
+            JsonNode buckets = dataNode.get("aggregations").get("group_field").get("buckets");
             if (buckets.elements().hasNext()) {
                 count +=  buckets.get(0).get("users").get("value").asInt();
             }
