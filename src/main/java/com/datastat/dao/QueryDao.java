@@ -120,7 +120,7 @@ public class QueryDao {
     protected List<String> domain_ids;
     private static final Logger logger = LoggerFactory.getLogger(QueryDao.class);
     private static List<Map<String, Object>> giteeWebhookList = new ArrayList<>();
-
+    private static final int EXTRA_ISV = 235;
     @PostConstruct
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
@@ -254,7 +254,7 @@ public class QueryDao {
             users = downloads;
         }
         JsonNode isvNode = objectMapper.readTree(this.queryIsvCount(queryConf, "isv")).get("data").get("isv");
-        Object isv = isvNode == null ? null : isvNode.intValue();
+        Object isv = isvNode == null ? null : isvNode.intValue() + EXTRA_ISV;
         contributes.put("downloads", downloads);
         contributes.put("contributors", contributorsNode.intValue());
         contributes.put("users", users);
