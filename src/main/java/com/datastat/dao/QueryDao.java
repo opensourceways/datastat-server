@@ -3610,7 +3610,7 @@ public class QueryDao {
             String url = String.format(queryConf.getPostIssueUrl(), owner);
             HashMap<String, Object> postBody = new HashMap<>();
             postBody.put("access_token", queryConf.getAccessToken());
-            postBody.put("title", "全局反馈");
+            postBody.put("title", queryConf.getGlobalNpsIssueTitle());
             postBody.put("body", content);
             postBody.put("owner", owner);
             postBody.put("repo", repo);
