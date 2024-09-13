@@ -1528,4 +1528,43 @@ public class QueryService {
       }
       return result;
   }
+
+    public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
+        if (!checkCommunity(community) && !community.equals("xihe")) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        return queryDao.putGlobalNpsIssue(queryConf, token, community, body);
+    }
+
+    public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
+        String key = params.getCommunity() + params.getSort() + params.getFilter() + "globalfeedbackissue";
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            QueryDao queryDao = getQueryDao(request);
+            CustomPropertiesConfig queryConf = getQueryConf(request);
+            result = queryDao.queryGlobalIssues(queryConf, token, params);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode resultJson = objectMapper.readTree(result);
+        if (resultJson.get("code").asInt() != 200) {
+            return resultJsonStr(404, null, "error");
+        }
+        ArrayList<HashMap<String, Object>> resList = objectMapper.convertValue(resultJson.get("data"),
+                new TypeReference<ArrayList<HashMap<String, Object>>>() {
+                });
+        ArrayList<HashMap<String, Object>> dataList = new ArrayList<>();
+        int page = params.getPage() == null ? 1 : params.getPage();
+        int pageSize = params.getPageSize() == null ? 10 : params.getPageSize();
+        Map data = PageUtils.getDataByPage(page, pageSize, resList);    
+        dataList.add((HashMap<String, Object>) data);
+        
+        HashMap<String, Object> resMap = new HashMap<>();
+        resMap.put("code", 200);
+        resMap.put("data", dataList);
+        resMap.put("msg", "success");
+        result = objectMapper.valueToTree(resMap).toString();
+        return result;
+    }
 }

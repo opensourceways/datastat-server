@@ -54,6 +54,7 @@ public class CustomPropertiesConfig {
     private String npsIssueTitleFormat;
     private String postIssueUrl;
     private String npsIssueFilter;
+    private String globalNpsIssueFormat;
 
     // -- index --
     private String extOsIndex;
