@@ -3586,4 +3586,95 @@ public class QueryDao {
             return resultJsonStr(statusCode, null, emptyMsg);
         }
     }
+
+    
+    public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
+        HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
+        });
+        resMap.put("community", community);
+        if (token == null) {
+               logger.info("Token is not allowed null");
+               throw new IllegalArgumentException("Token can not be null");
+        }
+        String userId = getUserId(token);
+        resMap.put("userId", userId);
+        String owner = Constant.FEEDBACK_OWNER;
+        String repo = Constant.FEEDBACK_REPO;
+        try {
+            Date now = new Date();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String nowStr = simpleDateFormat.format(now);
+            String uuid = UUID.randomUUID().toString();
+            resMap.put("created_at", nowStr);
+
+            String content = String.format(queryConf.getGlobalNpsIssueFormat(), body.getFeedbackPageUrl(),
+                    body.getFeedbackValue(), body.getFeedbackText(), userId);
+            String url = String.format(queryConf.getPostIssueUrl(), owner);
+            HashMap<String, Object> postBody = new HashMap<>();
+            postBody.put("access_token", queryConf.getAccessToken());
+            postBody.put("title", queryConf.getGlobalNpsIssueTitle());
+            postBody.put("body", content);
+            postBody.put("owner", owner);
+            postBody.put("repo", repo);
+            String postBodyStr = objectMapper.writeValueAsString(postBody);
+            HttpClientUtils.postHttpClient(url, postBodyStr);
+
+            BulkRequest request = new BulkRequest();
+            RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+            IndexRequest indexRequest = new IndexRequest(queryConf.getNpsIndex());
+            indexRequest.id(uuid);
+            indexRequest.source(resMap, XContentType.JSON);
+            request.add(indexRequest);
+            if (request.requests().size() != 0) {
+                restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            }
+            restHighLevelClient.close();
+            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+        } catch (Exception e) {
+            logger.error("query/get/nps", e.getMessage());
+            return resultJsonStr(400, null, "error");
+        }
+    }
+
+    @SneakyThrows
+    public String queryGlobalIssues(CustomPropertiesConfig queryConf, String token, ContributeRequestParams params) {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        String[] includeFields = queryConf.getRepoIssueField().split(",");
+        searchSourceBuilder.fetchSource(includeFields, null);
+
+        String filter = params.getFilter() == null ? "*" : params.getFilter();
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.must(QueryBuilders.termQuery("is_gitee_issue", 1));
+        boolQueryBuilder.mustNot(QueryBuilders.matchQuery("is_removed", 1));
+        boolQueryBuilder.must(QueryBuilders.wildcardQuery("issue_customize_state.keyword", filter));
+        boolQueryBuilder.must(QueryBuilders.wildcardQuery("userId", getUserId(token)));
+        boolQueryBuilder.must(QueryBuilders.queryStringQuery(queryConf.getNpsIssueFilter()));
+        searchSourceBuilder.query(boolQueryBuilder);
+
+        if ("asc".equalsIgnoreCase(params.getSort())) {
+            searchSourceBuilder.sort("created_at", SortOrder.ASC);
+        } else if ("desc".equalsIgnoreCase(params.getSort())){
+            searchSourceBuilder.sort("created_at", SortOrder.DESC);
+        } else {
+            logger.info("Sort field error");
+            throw new IllegalArgumentException("Sort field error");
+        }
+
+        RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+        ArrayList<Object> resultInfoList = esQueryUtils.esScroll(restHighLevelClient, "issue", queryConf.getGiteeFeedbackIssueIndex(), 1000, searchSourceBuilder);
+        String resultInfo = ResultUtil.resultJsonStr(400, "issue", ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
+        if (resultInfoList != null) { 
+            ArrayList<HashMap<String, Object>> resList = objectMapper.convertValue(resultInfoList,
+                new TypeReference<ArrayList<HashMap<String, Object>>>() {
+                });
+            resultInfoList = new ArrayList<>();
+            for (HashMap<String, Object> result : resList) {
+                String[] body = ((String) result.get("body")).split(queryConf.getFeedbackField());
+                result.put("feedback", body[body.length - 1]);
+                resultInfoList.add(result);
+            }
+            resultInfo = ResultUtil.resultJsonStr(200, resultInfoList, "ok", Map.of("totalCount", resultInfoList.size()));
+        }
+        return resultInfo;
+    }
 }
