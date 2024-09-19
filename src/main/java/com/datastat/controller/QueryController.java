@@ -727,8 +727,9 @@ public class QueryController {
         return queryService.queryRepoIssues(request, params);
     }
 
+    @OneidToken
     @GetMapping("/get/nps")
-    public String queryGolbalIssues(HttpServletRequest request, @CookieValue(value = "_Y_G_", required = false) String token, 
+    public String queryGolbalIssues(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
     ContributeRequestParams params) throws Exception {
         return queryService.queryGolbalIssues(request, token, params);
     }
@@ -745,8 +746,9 @@ public class QueryController {
 
     @LimitRequest(callTime = 1, callCount = 1000)
     @RateLimit
+    @OneidToken
     @RequestMapping(value = "/globalnps/issue", method = RequestMethod.POST)
-    public String putGlobalNpsIssue(HttpServletRequest request, @CookieValue(value = "_Y_G_", required = false) String token, 
+    public String putGlobalNpsIssue(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
     @RequestParam(value = "community") String community, @Valid @RequestBody NpsBody body) {
         return queryService.putGlobalNpsIssue(request, token, community, body);
     }
