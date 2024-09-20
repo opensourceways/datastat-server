@@ -1537,15 +1537,11 @@ public class QueryService {
     }
 
     public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
-        String key = params.getCommunity() + params.getSort() + params.getFilter() + "globalfeedbackissue";
-        String result = (String) redisDao.get(key);
-        if (result == null) {
-            QueryDao queryDao = getQueryDao(request);
-            CustomPropertiesConfig queryConf = getQueryConf(request);
-            result = queryDao.queryGlobalIssues(queryConf, token, params);
-            redisDao.set(key, result, redisDefaultExpire);
-        }
-        
+        if (!checkCommunity(params.getCommunity())) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        String result = queryDao.queryGlobalIssues(queryConf, token, params);
+
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode resultJson = objectMapper.readTree(result);
         if (resultJson.get("code").asInt() != 200) {

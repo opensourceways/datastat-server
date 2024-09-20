@@ -114,6 +114,9 @@ public class QueryDao {
     @Autowired
     ObsDao obsDao;
 
+    @Autowired
+    UserIdDao userIdDao;
+
     protected static String esUrl;
     protected EsQueryUtils esQueryUtils;
     protected List<String> robotUsers;
@@ -2476,20 +2479,8 @@ public class QueryDao {
         return putDataSource(queryConf.getMeetupApplyFormIndex(), meetupApplyFormMap, token);
     }
 
-    public String getUserId(String token){
-        String userId = null;
-        try {
-            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(env.getProperty("rsa.authing.privateKey"));
-            DecodedJWT decode = JWT.decode(RSAUtil.privateDecrypt(token, privateKey));
-            userId = decode.getAudience().get(0);
-        } catch (Exception e) {
-            logger.error("parse token exception - {}", e.getMessage());
-        }
-        return userId;
-    }
-
     public String putDataSource(String indexName, Map dataSource, String token) {
-        String userId = getUserId(token);
+        String userId = userIdDao.getUserId(token);
         if (userId == null)
             return "{\"code\":400,\"data\":\"user failed\",\"msg\":\"user failed\"}";
         Date now = new Date();
@@ -3435,7 +3426,7 @@ public class QueryDao {
 
     @SneakyThrows
     public String putSigGathering(CustomPropertiesConfig queryConf, String item, SigGathering sigGatherings, String token) {
-        String userId = getUserId(token);
+        String userId = userIdDao.getUserId(token);
         Response response = esAsyncHttpUtil.executeCount(esUrl, queryConf.getSigGatheringIndex(),
                 String.format(queryConf.getSigGatheringUserCount(), userId)).get();
         String responseBody = response.getResponseBody(UTF_8);
@@ -3501,7 +3492,7 @@ public class QueryDao {
     public String putNpsIssue(CustomPropertiesConfig queryConf, String community, NpsIssueBody body, String token) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {});
         if (token != null) {
-            resMap.put("userId", getUserId(token));
+            resMap.put("userId", userIdDao.getUserId(token));
         }
         String owner = Constant.FEEDBACK_OWNER;
         String repo = Constant.FEEDBACK_REPO;
@@ -3596,7 +3587,11 @@ public class QueryDao {
                logger.info("Token is not allowed null");
                throw new IllegalArgumentException("Token can not be null");
         }
-        String userId = getUserId(token);
+        String userId = userIdDao.getUserId(token);
+        if(userId == null || userId.equals("")) {
+            logger.info("UserId is null");
+            throw new IllegalArgumentException("UserId is null");
+        }
         resMap.put("userId", userId);
         String owner = Constant.FEEDBACK_OWNER;
         String repo = Constant.FEEDBACK_REPO;
@@ -3631,7 +3626,7 @@ public class QueryDao {
             restHighLevelClient.close();
             return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
-            logger.error("query/get/nps", e.getMessage());
+            logger.error("Global nps issue exception - {}", e.getMessage());
             return resultJsonStr(400, null, "error");
         }
     }
@@ -3641,13 +3636,21 @@ public class QueryDao {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         String[] includeFields = queryConf.getRepoIssueField().split(",");
         searchSourceBuilder.fetchSource(includeFields, null);
-
+        if (token == null) {
+            logger.info("Token is not allowed null");
+            throw new IllegalArgumentException("Token can not be null");
+        }
+        String userId = userIdDao.getUserId(token);
+        if(userId == null || userId.equals("")) {
+            logger.info("UserId is null");
+            throw new IllegalArgumentException("UserId is null");
+        }
         String filter = params.getFilter() == null ? "*" : params.getFilter();
         BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
         boolQueryBuilder.must(QueryBuilders.termQuery("is_gitee_issue", 1));
         boolQueryBuilder.mustNot(QueryBuilders.matchQuery("is_removed", 1));
         boolQueryBuilder.must(QueryBuilders.wildcardQuery("issue_customize_state.keyword", filter));
-        boolQueryBuilder.must(QueryBuilders.wildcardQuery("userId", getUserId(token)));
+        boolQueryBuilder.must(QueryBuilders.wildcardQuery("userId.keyword", userId));
         boolQueryBuilder.must(QueryBuilders.queryStringQuery(queryConf.getNpsIssueFilter()));
         searchSourceBuilder.query(boolQueryBuilder);
 
