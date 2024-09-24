@@ -3586,4 +3586,73 @@ public class QueryDao {
             return resultJsonStr(statusCode, null, emptyMsg);
         }
     }
+
+    @SneakyThrows
+    public String saveFrontendEvents(String community, String requestBody) {
+        JsonNode reqBody = objectMapper.readTree(requestBody);   //得到新格式数据
+        ObjectNode oldJson = objectMapper.createObjectNode();    //空的老格式数据
+
+        Date now = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        String nowStr = simpleDateFormat.format(now);
+        System.out.println(reqBody);
+        String id = reqBody.get("header").get("cId").asText();
+        // HashMap<String, Object> resMap = objectMapper.convertValue(userVo, HashMap.class);
+        oldJson.put("created_at", nowStr);
+        oldJson.put("community", community);
+
+        ObjectNode identities = objectMapper.createObjectNode();
+        identities.put("$identity_cookie_id", "");
+        oldJson.set("identities", identities);
+
+        oldJson.put("distinct_id", "");
+
+        ObjectNode lib = objectMapper.createObjectNode();
+        lib.put("$lib", "");
+        lib.put("$lib_method", "");
+        lib.put("$lib_version", "");
+        oldJson.set("lib", lib);
+        try {
+
+          ObjectNode properties = objectMapper.createObjectNode();
+          properties.put("$timezone_offset", "");
+          properties.put("$screen_height", reqBody.get("header").get("screen_height").asInt());
+          properties.put("$screen_width", reqBody.get("header").get("screen_width").asInt());
+          properties.put("$viewport_height", reqBody.get("header").get("view_height").asInt());
+          properties.put("$viewport_width", reqBody.get("header").get("view_width").asInt());
+          properties.put("$lib", "");
+          properties.put("$lib_version", "");
+          properties.put("$latest_traffic_source_type", "");
+          properties.put("$latest_search_keyword", "");
+          properties.put("$latest_referrer", "");
+          properties.put("$referrer", "");
+          properties.put("$url", reqBody.get("body").get(0).get("properties").get("url").asText());
+          properties.put("$url_path", reqBody.get("body").get(0).get("properties").get("path").asText());
+          properties.put("$title", "");
+          properties.put("language", "");
+          properties.put("ip", "");
+          properties.put("city", "");
+          properties.put("os", reqBody.get("header").get("os").asText());
+          properties.put("osVersion", reqBody.get("header").get("os_version").asText());
+          properties.put("browser", reqBody.get("header").get("browser").asText());
+          properties.put("browserVersion", reqBody.get("header").get("browser_version").asText());
+          properties.put("$is_first_day", "");
+          properties.put("$is_first_time", "");
+          properties.put("$referrer_host", "");
+          oldJson.set("properties", properties);
+
+          oldJson.put("anonymous_id", "");
+          oldJson.put("type", "track");
+          oldJson.put("event", reqBody.get("body").get(0).get("event").asText());
+          oldJson.put("time", "");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return resultJsonStr(400, "error", "bad request");
+        }
+
+        System.out.println(objectMapper.valueToTree(oldJson).toString());
+        kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(oldJson).toString());
+        return resultJsonStr(200, "track_id", id, "collect over");
+
+    }
 }

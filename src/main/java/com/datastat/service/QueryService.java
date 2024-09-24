@@ -1527,5 +1527,11 @@ public class QueryService {
         redisDao.set(key, result, redisDefaultExpire);
       }
       return result;
-  }
+    }
+
+    public String saveFrontendEvents(HttpServletRequest request, String community, String requestBody) {
+        QueryDao queryDao = getQueryDao(request);
+        if (!checkCommunity(community)) return queryDao.resultJsonStr(404, "error", "not found");
+        return queryDao.saveFrontendEvents(community, requestBody);
+    }
 }
