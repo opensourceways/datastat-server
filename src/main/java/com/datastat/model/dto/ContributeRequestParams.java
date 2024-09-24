@@ -22,6 +22,7 @@ public class ContributeRequestParams {
     @Size(max = 20, message = "the length can not exceed 20")
     private String sort;
 
+    @Min(value = 1, message = "Value must be greater than or equal to 1")
     private Integer page;
     
     @Min(value = 5, message = "Value must be greater than or equal to 5")

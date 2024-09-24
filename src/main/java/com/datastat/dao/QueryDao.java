@@ -3632,19 +3632,10 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    public String queryGlobalIssues(CustomPropertiesConfig queryConf, String token, ContributeRequestParams params) {
+    public String queryGlobalIssues(CustomPropertiesConfig queryConf, String userId, ContributeRequestParams params) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         String[] includeFields = queryConf.getRepoIssueField().split(",");
         searchSourceBuilder.fetchSource(includeFields, null);
-        if (token == null) {
-            logger.info("Token is not allowed null");
-            throw new IllegalArgumentException("Token can not be null");
-        }
-        String userId = userIdDao.getUserId(token);
-        if(userId == null || userId.equals("")) {
-            logger.info("UserId is null");
-            throw new IllegalArgumentException("UserId is null");
-        }
         String filter = params.getFilter() == null ? "*" : params.getFilter();
         BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
         boolQueryBuilder.must(QueryBuilders.termQuery("is_gitee_issue", 1));
