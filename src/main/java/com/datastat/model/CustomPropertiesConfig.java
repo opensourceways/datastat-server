@@ -54,6 +54,8 @@ public class CustomPropertiesConfig {
     private String npsIssueTitleFormat;
     private String postIssueUrl;
     private String npsIssueFilter;
+    private String globalNpsIssueFormat;
+    private String globalNpsIssueTitle;
 
     // -- index --
     private String extOsIndex;
@@ -104,6 +106,7 @@ public class CustomPropertiesConfig {
     private String sigGatheringIndex;
     private String sigGatheringTemplate;
     private String softwareMaintainerIndex;
+    private String giteeFeedbackIssueIndex;
 
     // -- query str --
     private String extOsQueryStr;
