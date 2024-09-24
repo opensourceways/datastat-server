@@ -1,7 +1,7 @@
 name: Lint Code Base
 on:
   push:
-    branches-ignore: [master, main, test, develop_test]
+    branches: [master, main, test, develop_test]
   pull_request:
     branches: [master, main, test, develop_test]
 jobs:
