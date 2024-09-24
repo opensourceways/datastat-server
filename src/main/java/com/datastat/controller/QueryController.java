@@ -730,7 +730,7 @@ public class QueryController {
     @OneidToken
     @GetMapping("/get/nps")
     public String queryGolbalIssues(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
-    ContributeRequestParams params) throws Exception {
+    @Valid ContributeRequestParams params) throws Exception {
         return queryService.queryGolbalIssues(request, token, params);
     }
 
