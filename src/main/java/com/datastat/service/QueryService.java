@@ -16,6 +16,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.datastat.config.context.QueryConfContext;
 import com.datastat.dao.QueryDao;
 import com.datastat.dao.RedisDao;
+import com.datastat.dao.UserIdDao;
 import com.datastat.dao.context.MetricDaoContext;
 import com.datastat.dao.context.QueryDaoContext;
 import com.datastat.dao.metric.MetricDao;
@@ -72,6 +73,9 @@ public class QueryService {
 
     @Autowired
     RedisDao redisDao;
+
+    @Autowired
+    UserIdDao userIdDao;
 
     @Autowired
     ObjectMapper objectMapper;
@@ -1528,4 +1532,54 @@ public class QueryService {
       }
       return result;
   }
+
+    public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
+        if (!checkCommunity(community) && !community.equals("xihe")) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        if(body.getFeedbackValue() > 5 || body.getFeedbackValue() < 1) {
+            logger.info("Value must be between 1 and 5");
+            throw new IllegalArgumentException("Value check error");
+        }
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        return queryDao.putGlobalNpsIssue(queryConf, token, community, body);
+    }
+
+    public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
+        if (!checkCommunity(params.getCommunity())) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        if (token == null) {
+            logger.info("Token is not allowed null");
+            throw new IllegalArgumentException("Token can not be null");
+        }
+        String userId = userIdDao.getUserId(token);
+        if(userId == null || userId.equals("")) {
+            logger.info("UserId is null");
+            throw new IllegalArgumentException("UserId is null");
+        }
+        String key = params.getCommunity() + params.getRepo() + params.getSort() + params.getFilter() + "globalfeedbackissue" + userId;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            QueryDao queryDao = getQueryDao(request);
+            CustomPropertiesConfig queryConf = getQueryConf(request);
+            result = queryDao.queryGlobalIssues(queryConf, userId, params);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode resultJson = objectMapper.readTree(result);
+        if (resultJson.get("code").asInt() != 200) {
+            return resultJsonStr(404, null, "error");
+        }
+        ArrayList<HashMap<String, Object>> resList = objectMapper.convertValue(resultJson.get("data"),
+                new TypeReference<ArrayList<HashMap<String, Object>>>() {
+                });
+        ArrayList<HashMap<String, Object>> dataList = new ArrayList<>();
+        int page = params.getPage() == null ? 1 : params.getPage();
+        int pageSize = params.getPageSize() == null ? 10 : params.getPageSize();
+        Map data = PageUtils.getDataByPage(page, pageSize, resList);    
+        dataList.add((HashMap<String, Object>) data);
+        
+        Map<String, Object> resMap = Map.of("code",200,"data", dataList,"msg", "success");
+        result = objectMapper.valueToTree(resMap).toString();
+        return result;
+    }
 }
