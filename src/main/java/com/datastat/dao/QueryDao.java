@@ -3586,9 +3586,8 @@ public class QueryDao {
         Date now = new Date();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
         String nowStr = simpleDateFormat.format(now);
-        System.out.println(reqBody);
+
         String id = reqBody.get("header").get("cId").asText();
-        // HashMap<String, Object> resMap = objectMapper.convertValue(userVo, HashMap.class);
         oldJson.put("created_at", nowStr);
         oldJson.put("community", community);
 
@@ -3641,7 +3640,6 @@ public class QueryDao {
             return resultJsonStr(400, "error", "bad request");
         }
 
-        System.out.println(objectMapper.valueToTree(oldJson).toString());
         kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(oldJson).toString());
         return resultJsonStr(200, "track_id", id, "collect over");
     }
