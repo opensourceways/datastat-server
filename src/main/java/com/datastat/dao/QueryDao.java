@@ -3580,68 +3580,31 @@ public class QueryDao {
 
     @SneakyThrows
     public String saveFrontendEvents(String community, String requestBody) {
-        JsonNode reqBody = objectMapper.readTree(requestBody);   //得到新格式数据
-        ObjectNode oldJson = objectMapper.createObjectNode();    //空的老格式数据
+      ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
+      JsonNode header = reqBody.get("header");
+      ObjectNode headerObj = objectMapper.treeToValue(header, ObjectNode.class);
+      JsonNode events = reqBody.get("body");
 
-        Date now = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-        String nowStr = simpleDateFormat.format(now);
+      String cId = header.get("cId").asText();
 
-        String id = reqBody.get("header").get("cId").asText();
-        oldJson.put("created_at", nowStr);
-        oldJson.put("community", community);
+      Date now = new Date();
+      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+      String nowStr = simpleDateFormat.format(now);
 
-        ObjectNode identities = objectMapper.createObjectNode();
-        identities.put("$identity_cookie_id", "");
-        oldJson.set("identities", identities);
+      for (JsonNode event : events) {
+          ObjectNode eventObj = objectMapper.treeToValue(event, ObjectNode.class);
 
-        oldJson.put("distinct_id", "");
+          String id = UUID.randomUUID().toString();   //生成唯一不重复id
 
-        ObjectNode lib = objectMapper.createObjectNode();
-        lib.put("$lib", "");
-        lib.put("$lib_method", "");
-        lib.put("$lib_version", "");
-        oldJson.set("lib", lib);
-        try {
+          eventObj.put("created_at", nowStr);
+          eventObj.put("community", community);
 
-          ObjectNode properties = objectMapper.createObjectNode();
-          properties.put("$timezone_offset", "");
-          properties.put("$screen_height", reqBody.get("header").get("screen_height").asInt());
-          properties.put("$screen_width", reqBody.get("header").get("screen_width").asInt());
-          properties.put("$viewport_height", reqBody.get("header").get("view_height").asInt());
-          properties.put("$viewport_width", reqBody.get("header").get("view_width").asInt());
-          properties.put("$lib", "");
-          properties.put("$lib_version", "");
-          properties.put("$latest_traffic_source_type", "");
-          properties.put("$latest_search_keyword", "");
-          properties.put("$latest_referrer", "");
-          properties.put("$referrer", "");
-          properties.put("$url", reqBody.get("body").get(0).get("properties").get("url").asText());
-          properties.put("$url_path", reqBody.get("body").get(0).get("properties").get("path").asText());
-          properties.put("$title", "");
-          properties.put("language", "");
-          properties.put("ip", "");
-          properties.put("city", "");
-          properties.put("os", reqBody.get("header").get("os").asText());
-          properties.put("osVersion", reqBody.get("header").get("os_version").asText());
-          properties.put("browser", reqBody.get("header").get("browser").asText());
-          properties.put("browserVersion", reqBody.get("header").get("browser_version").asText());
-          properties.put("$is_first_day", "");
-          properties.put("$is_first_time", "");
-          properties.put("$referrer_host", "");
-          oldJson.set("properties", properties);
+          JsonNode mergedJson = objectMapper.updateValue(headerObj, eventObj);
 
-          oldJson.put("anonymous_id", "");
-          oldJson.put("type", "track");
-          oldJson.put("event", reqBody.get("body").get(0).get("event").asText());
-          oldJson.put("time", "");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return resultJsonStr(400, "error", "bad request");
-        }
+          kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(mergedJson).toString());
+      }
 
-        kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(oldJson).toString());
-        return resultJsonStr(200, "track_id", id, "collect over");
+      return resultJsonStr(200, "cId", cId, "collect over");
     }
     
     public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
