@@ -3580,18 +3580,47 @@ public class QueryDao {
 
     @SneakyThrows
     public String saveFrontendEvents(String community, String requestBody) {
+      // 检测请求体是否含有header和body
+      boolean hasHeader = requestBody.contains("\"header\"");
+      boolean hasBody = requestBody.contains("\"body\"");
+      boolean hasCID = requestBody.contains("\"cId\"");
+      if(!hasHeader || !hasBody || !hasCID){
+        logger.error("saveFrontendEvents get request body error, requestBody:", requestBody);
+        return resultJsonStr(400, "data", null, "Incorrect request body");
+      }
+
       ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
       JsonNode header = reqBody.get("header");
       ObjectNode headerObj = objectMapper.treeToValue(header, ObjectNode.class);
       JsonNode events = reqBody.get("body");
-
-      String cId = header.get("cId").asText();
+      String cId = header.get("cId").asText();  
 
       Date now = new Date();
       SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
       String nowStr = simpleDateFormat.format(now);
 
       for (JsonNode event : events) {
+          // 对单个事件长度校验
+          String eventStr = objectMapper.writeValueAsString(event);
+          if(eventStr.length() > 2000){
+            logger.error("saveFrontendEvents get event error, event size is too long. event:", event);
+            return resultJsonStr(400, null, "abnormal length of asingle event");
+          }
+          // 对单个事件必要字段校验
+          try {
+            boolean hasEvent = event.has("event");
+            boolean hasProperties = event.has("properties");
+            boolean hasTime = event.has("time");
+            boolean hasSID = event.has("sId");
+            if(!hasEvent || !hasProperties || !hasTime || !hasSID){
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+            }
+          } catch (Exception e) {
+              logger.error("saveFrontendEvents get event error", e.getMessage());
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+          }
+
+
           ObjectNode eventObj = objectMapper.treeToValue(event, ObjectNode.class);
 
           String id = UUID.randomUUID().toString();   //生成唯一不重复id
