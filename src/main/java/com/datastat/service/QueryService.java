@@ -1531,7 +1531,13 @@ public class QueryService {
         redisDao.set(key, result, redisDefaultExpire);
       }
       return result;
-  }
+    }
+
+    public String saveFrontendEvents(HttpServletRequest request, String community, String requestBody) {
+        QueryDao queryDao = getQueryDao(request);
+        if (!checkCommunity(community)) return queryDao.resultJsonStr(404, "error", "not found");
+        return queryDao.saveFrontendEvents(community, requestBody);
+    }
 
     public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
         if (!checkCommunity(community) && !community.equals("xihe")) return getQueryDao(request).resultJsonStr(404, "error", "not found");

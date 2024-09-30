@@ -3578,6 +3578,63 @@ public class QueryDao {
         }
     }
 
+    @SneakyThrows
+    public String saveFrontendEvents(String community, String requestBody) {
+      // 检测请求体是否含有header和body
+      boolean hasHeader = requestBody.contains("\"header\"");
+      boolean hasBody = requestBody.contains("\"body\"");
+      boolean hasCID = requestBody.contains("\"cId\"");
+      if(!hasHeader || !hasBody || !hasCID){
+        logger.error("saveFrontendEvents get request body error");
+        return resultJsonStr(400, "data", null, "Incorrect request body");
+      }
+
+      ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
+      JsonNode header = reqBody.get("header");
+      ObjectNode headerObj = objectMapper.treeToValue(header, ObjectNode.class);
+      JsonNode events = reqBody.get("body");
+      String cId = header.get("cId").asText();  
+
+      Date now = new Date();
+      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+      String nowStr = simpleDateFormat.format(now);
+
+      // 对body里面event总数进行校验
+      if (events.size() > 500) {
+        logger.error("saveFrontendEvents get event error. events size over 500: events.size:{}", events.size());
+        return resultJsonStr(400, "data", null, "Incorrect number of events");
+      }
+
+      for (JsonNode event : events) {
+          // 对单个事件必要字段校验 event、propeties、time、sId
+          try {
+            boolean hasEvent = event.has("event");
+            boolean hasProperties = event.has("properties");
+            boolean hasTime = event.has("time");
+            boolean hasSID = event.has("sId");
+            if(!hasEvent || !hasProperties || !hasTime || !hasSID){
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+            }
+          } catch (Exception e) {
+              logger.error("saveFrontendEvents get event error, {}", e.getMessage());
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+          }
+
+
+          ObjectNode eventObj = objectMapper.treeToValue(event, ObjectNode.class);
+
+          String id = UUID.randomUUID().toString();   //生成唯一不重复id
+
+          eventObj.put("created_at", nowStr);
+          eventObj.put("community", community);
+
+          JsonNode mergedJson = objectMapper.updateValue(eventObj, headerObj);
+
+          kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(mergedJson).toString());
+      }
+
+      return resultJsonStr(200, "cId", cId, "collect over");
+    }
     
     public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
