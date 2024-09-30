@@ -758,4 +758,12 @@ public class QueryController {
         @RequestParam(value = "user") String user) throws Exception {
         return queryService.queryUserOwnerRepos(request, user);
     }
+
+    @LimitRequest(callTime = 1, callCount = 1000)
+    @RequestMapping(value = "/track/{community}", method = RequestMethod.POST)
+    public String saveFrontendEvents(HttpServletRequest request,
+            @PathVariable(value = "community") String community,
+            @RequestBody String requestBody) {
+        return queryService.saveFrontendEvents(request, community, requestBody);
+    }
 }
