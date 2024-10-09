@@ -35,11 +35,19 @@ public class LimitRequestAspect {
      * Redis操作的DAO实例.
      */
     @Autowired
-    RedisDao redisDao;
-
+    private RedisDao redisDao;
+    /**
+     * 请求限制的配置值.
+     */
     private final ConcurrentHashMap<String, CallMark> callMarkMap = new ConcurrentHashMap<>();
+    /**
+     * ObjectMapper实例，用于将对象转换为JSON字符串.
+     */
     private ObjectMapper objectMapper = new ObjectMapper();
-
+    /**
+     * 切点定义，匹配带有{@link LimitRequest}注解的方法.
+     * @param limitRequest 限制请求注解
+     */
     @Pointcut("@annotation(limitRequest)")
     public void exudeService(LimitRequest limitRequest) { }
 
@@ -77,7 +85,7 @@ public class LimitRequestAspect {
                 callMark.setLastCallTime(now);
                 callMark.setCallCount(0);
             }
-            
+
             if (callMark.getCallCount() < limitRequest.callCount()) {
                 callMark.setCallCount(callMark.getCallCount() + 1);
                 callMarkMap.put(methodName, callMark);
@@ -90,7 +98,7 @@ public class LimitRequestAspect {
             callMark.setCallCount(1);
             callMarkMap.put(methodName, callMark);
             return true;
-        } 
+        }
     }
     /**
      * 限制IP地址访问频率的切面方法.
