@@ -114,13 +114,16 @@ public class QueryDao {
     @Autowired
     ObsDao obsDao;
 
+    @Autowired
+    UserIdDao userIdDao;
+
     protected static String esUrl;
     protected EsQueryUtils esQueryUtils;
     protected List<String> robotUsers;
     protected List<String> domain_ids;
     private static final Logger logger = LoggerFactory.getLogger(QueryDao.class);
     private static List<Map<String, Object>> giteeWebhookList = new ArrayList<>();
-
+    private static final int EXTRA_ISV = 235;
     @PostConstruct
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
@@ -254,7 +257,7 @@ public class QueryDao {
             users = downloads;
         }
         JsonNode isvNode = objectMapper.readTree(this.queryIsvCount(queryConf, "isv")).get("data").get("isv");
-        Object isv = isvNode == null ? null : isvNode.intValue();
+        Object isv = isvNode == null ? null : isvNode.intValue() + EXTRA_ISV;
         contributes.put("downloads", downloads);
         contributes.put("contributors", contributorsNode.intValue());
         contributes.put("users", users);
@@ -2465,20 +2468,8 @@ public class QueryDao {
         return putDataSource(queryConf.getMeetupApplyFormIndex(), meetupApplyFormMap, token);
     }
 
-    public String getUserId(String token){
-        String userId = null;
-        try {
-            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(env.getProperty("rsa.authing.privateKey"));
-            DecodedJWT decode = JWT.decode(RSAUtil.privateDecrypt(token, privateKey));
-            userId = decode.getAudience().get(0);
-        } catch (Exception e) {
-            logger.error("parse token exception - {}", e.getMessage());
-        }
-        return userId;
-    }
-
     public String putDataSource(String indexName, Map dataSource, String token) {
-        String userId = getUserId(token);
+        String userId = userIdDao.getUserId(token);
         if (userId == null)
             return "{\"code\":400,\"data\":\"user failed\",\"msg\":\"user failed\"}";
         Date now = new Date();
@@ -3424,7 +3415,7 @@ public class QueryDao {
 
     @SneakyThrows
     public String putSigGathering(CustomPropertiesConfig queryConf, String item, SigGathering sigGatherings, String token) {
-        String userId = getUserId(token);
+        String userId = userIdDao.getUserId(token);
         Response response = esAsyncHttpUtil.executeCount(esUrl, queryConf.getSigGatheringIndex(),
                 String.format(queryConf.getSigGatheringUserCount(), userId)).get();
         String responseBody = response.getResponseBody(UTF_8);
@@ -3490,7 +3481,7 @@ public class QueryDao {
     public String putNpsIssue(CustomPropertiesConfig queryConf, String community, NpsIssueBody body, String token) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {});
         if (token != null) {
-            resMap.put("userId", getUserId(token));
+            resMap.put("userId", userIdDao.getUserId(token));
         }
         String owner = Constant.FEEDBACK_OWNER;
         String repo = Constant.FEEDBACK_REPO;
@@ -3536,4 +3527,194 @@ public class QueryDao {
         }
     }
 
+    @SneakyThrows
+    public String queryUserOwnerRepos(CustomPropertiesConfig queryConf, String user) {
+        String query = String.format(queryConf.getUserOwnerReposQuery(), user) ;
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getSigIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+
+        try {
+            JsonNode dataNode = objectMapper.readTree(responseBody);
+            JsonNode aggregations = dataNode.get("aggregations");
+            JsonNode user_logins = aggregations.get("user_logins");
+            JsonNode buckets = user_logins.get("buckets");
+            JsonNode bucket = buckets.get(0);
+            JsonNode repos = bucket.get("repos");
+            JsonNode repo_buckets = repos.get("buckets");
+    
+            var target_repos = new ArrayList<String>();
+    
+            for (JsonNode repo_bucket : repo_buckets) {
+                String repoStr = repo_bucket.get("key").asText();
+                String org = repoStr.split("/")[0];
+                String repo = repoStr.split("/")[1];
+    
+                if(org.equals("src-openeuler")) {
+                    target_repos.add(repo);
+                }
+            }
+            
+            return resultJsonStr(statusCode, objectMapper.valueToTree(target_repos), statusText);  
+
+          } catch (Exception e) {
+            logger.error("query/user/owner/repos get error", e.getMessage());
+            String emptyMsg = "No repos found for the user, please check the input parameters.";
+
+            return resultJsonStr(statusCode, null, emptyMsg);
+        }
+    }
+
+    @SneakyThrows
+    public String saveFrontendEvents(String community, String requestBody) {
+      // 检测请求体是否含有header和body
+      boolean hasHeader = requestBody.contains("\"header\"");
+      boolean hasBody = requestBody.contains("\"body\"");
+      boolean hasCID = requestBody.contains("\"cId\"");
+      if(!hasHeader || !hasBody || !hasCID){
+        logger.error("saveFrontendEvents get request body error");
+        return resultJsonStr(400, "data", null, "Incorrect request body");
+      }
+
+      ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
+      JsonNode header = reqBody.get("header");
+      ObjectNode headerObj = objectMapper.treeToValue(header, ObjectNode.class);
+      JsonNode events = reqBody.get("body");
+      String cId = header.get("cId").asText();  
+
+      Date now = new Date();
+      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+      String nowStr = simpleDateFormat.format(now);
+
+      // 对body里面event总数进行校验
+      if (events.size() > 500) {
+        logger.error("saveFrontendEvents get event error. events size over 500: events.size:{}", events.size());
+        return resultJsonStr(400, "data", null, "Incorrect number of events");
+      }
+
+      for (JsonNode event : events) {
+          // 对单个事件必要字段校验 event、propeties、time、sId
+          try {
+            boolean hasEvent = event.has("event");
+            boolean hasProperties = event.has("properties");
+            boolean hasTime = event.has("time");
+            boolean hasSID = event.has("sId");
+            if(!hasEvent || !hasProperties || !hasTime || !hasSID){
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+            }
+          } catch (Exception e) {
+              logger.error("saveFrontendEvents get event error, {}", e.getMessage());
+              return resultJsonStr(400, "data", null, "Incorrect request field");
+          }
+
+
+          ObjectNode eventObj = objectMapper.treeToValue(event, ObjectNode.class);
+
+          String id = UUID.randomUUID().toString();   //生成唯一不重复id
+
+          eventObj.put("created_at", nowStr);
+          eventObj.put("community", community);
+
+          JsonNode mergedJson = objectMapper.updateValue(eventObj, headerObj);
+
+          kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(mergedJson).toString());
+      }
+
+      return resultJsonStr(200, "cId", cId, "collect over");
+    }
+    
+    public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
+        HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
+        });
+        resMap.put("community", community);
+        if (token == null) {
+               logger.info("Token is not allowed null");
+               throw new IllegalArgumentException("Token can not be null");
+        }
+        String userId = userIdDao.getUserId(token);
+        if(userId == null || userId.equals("")) {
+            logger.info("UserId is null");
+            throw new IllegalArgumentException("UserId is null");
+        }
+        resMap.put("userId", userId);
+        String owner = Constant.FEEDBACK_OWNER;
+        String repo = Constant.FEEDBACK_REPO;
+        try {
+            Date now = new Date();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String nowStr = simpleDateFormat.format(now);
+            String uuid = UUID.randomUUID().toString();
+            resMap.put("created_at", nowStr);
+
+            String content = String.format(queryConf.getGlobalNpsIssueFormat(), body.getFeedbackPageUrl(),
+                    body.getFeedbackValue(), body.getFeedbackText(), userId);
+            String url = String.format(queryConf.getPostIssueUrl(), owner);
+            HashMap<String, Object> postBody = new HashMap<>();
+            postBody.put("access_token", queryConf.getAccessToken());
+            postBody.put("title", queryConf.getGlobalNpsIssueTitle());
+            postBody.put("body", content);
+            postBody.put("owner", owner);
+            postBody.put("repo", repo);
+            String postBodyStr = objectMapper.writeValueAsString(postBody);
+            HttpClientUtils.postHttpClient(url, postBodyStr);
+
+            BulkRequest request = new BulkRequest();
+            RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+            IndexRequest indexRequest = new IndexRequest(queryConf.getNpsIndex());
+            indexRequest.id(uuid);
+            indexRequest.source(resMap, XContentType.JSON);
+            request.add(indexRequest);
+            if (request.requests().size() != 0) {
+                restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            }
+            restHighLevelClient.close();
+            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+        } catch (Exception e) {
+            logger.error("Global nps issue exception - {}", e.getMessage());
+            return resultJsonStr(400, null, "error");
+        }
+    }
+
+    @SneakyThrows
+    public String queryGlobalIssues(CustomPropertiesConfig queryConf, String userId, ContributeRequestParams params) {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        String[] includeFields = queryConf.getRepoIssueField().split(",");
+        searchSourceBuilder.fetchSource(includeFields, null);
+        String filter = params.getFilter() == null ? "*" : params.getFilter();
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.must(QueryBuilders.termQuery("is_gitee_issue", 1));
+        boolQueryBuilder.mustNot(QueryBuilders.matchQuery("is_removed", 1));
+        boolQueryBuilder.must(QueryBuilders.wildcardQuery("issue_customize_state.keyword", filter));
+        boolQueryBuilder.must(QueryBuilders.wildcardQuery("userId.keyword", userId));
+        boolQueryBuilder.must(QueryBuilders.queryStringQuery(queryConf.getNpsIssueFilter()));
+        searchSourceBuilder.query(boolQueryBuilder);
+
+        if ("asc".equalsIgnoreCase(params.getSort())) {
+            searchSourceBuilder.sort("created_at", SortOrder.ASC);
+        } else if ("desc".equalsIgnoreCase(params.getSort())){
+            searchSourceBuilder.sort("created_at", SortOrder.DESC);
+        } else {
+            logger.info("Sort field error");
+            throw new IllegalArgumentException("Sort field error");
+        }
+
+        RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+        ArrayList<Object> resultInfoList = esQueryUtils.esScroll(restHighLevelClient, "issue", queryConf.getGiteeFeedbackIssueIndex(), 1000, searchSourceBuilder);
+        String resultInfo = ResultUtil.resultJsonStr(400, "issue", ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
+        if (resultInfoList != null) { 
+            ArrayList<HashMap<String, Object>> resList = objectMapper.convertValue(resultInfoList,
+                new TypeReference<ArrayList<HashMap<String, Object>>>() {
+                });
+            resultInfoList = new ArrayList<>();
+            for (HashMap<String, Object> result : resList) {
+                String[] body = ((String) result.get("body")).split(queryConf.getFeedbackField());
+                result.put("feedback", body[body.length - 1]);
+                resultInfoList.add(result);
+            }
+            resultInfo = ResultUtil.resultJsonStr(200, resultInfoList, "ok", Map.of("totalCount", resultInfoList.size()));
+        }
+        return resultInfo;
+    }
 }
