@@ -10,13 +10,13 @@ WORKDIR /var/lib/ds
 
 
 RUN yum install -y wget \
-    && wget https://mirrors-i.tuna.tsinghua.edu.cn/Adoptium/17/jdk/x64/linux/OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz \
-    && tar -zxvf OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz \
+    && wget https://mirrors-i.tuna.tsinghua.edu.cn/Adoptium/17/jdk/x64/linux/OpenJDK17U-jdk_x64_linux_hotspot_17.0.13_11.tar.gz \
+    && tar -zxvf OpenJDK17U-jdk_x64_linux_hotspot_17.0.13_11.tar.gz \
     && wget https://mirrors.tuna.tsinghua.edu.cn/apache/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz \
     && tar -xzvf apache-maven-3.8.8-bin.tar.gz \
     && yum install -y git
 
-ENV JAVA_HOME=/var/lib/ds/jdk-17.0.12+7
+ENV JAVA_HOME=/var/lib/ds/jdk-17.0.13+11
 ENV PATH=${JAVA_HOME}/bin:$PATH
 
 ENV MAVEN_HOEM=/var/lib/ds/apache-maven-3.8.8
