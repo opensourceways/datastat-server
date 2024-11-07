@@ -12,6 +12,7 @@
 package com.datastat.dao;
 
 import com.datastat.model.CustomPropertiesConfig;
+import com.datastat.util.ResultUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.SneakyThrows;
 
@@ -42,7 +43,7 @@ public class OpenGaussQueryDao extends QueryDao {
         for (int i = 0; i < queryJsons.length; i++) {
             count += getDownloadRes(indexs[i], queryJsons[i]);
         }
-        return resultJsonStr(200, item, count, "ok");
+        return ResultUtil.resultJsonStr(200, item, count, "ok");
     }
 
     @SneakyThrows
@@ -111,6 +112,6 @@ public class OpenGaussQueryDao extends QueryDao {
             sigFeature.put("sig_names", key);
             sigList.add(sigFeature);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
     }
 }
