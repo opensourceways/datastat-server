@@ -1453,17 +1453,6 @@ public class QueryDao {
         return null;
     }
 
-
-    public String resultJsonStr(int code, String item, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":{\"" + item + "\":" + data + "},\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
-    public String resultJsonStr(int code, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":" + data + ",\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
     protected Map<String, Object> queryContributes(CustomPropertiesConfig queryConf, String community) {
         String giteeIndex = queryConf.getGiteeAllIndex();
         String claIndex = queryConf.getClaCorporationIndex();
