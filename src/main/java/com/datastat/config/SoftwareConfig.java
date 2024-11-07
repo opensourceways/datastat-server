@@ -12,6 +12,4 @@ import lombok.Data;
 @PropertySource(value = {"file:${config.path}/software.properties"}, encoding = "UTF-8")
 @Configuration("softwareConf")
 @Data
-public class SoftwareConfig extends CustomPropertiesConfig {
-    
-}
+public class SoftwareConfig extends CustomPropertiesConfig { }

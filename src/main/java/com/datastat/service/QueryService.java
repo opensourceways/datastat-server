@@ -1536,12 +1536,12 @@ public class QueryService {
 
     public String saveFrontendEvents(HttpServletRequest request, String community, String requestBody) {
         QueryDao queryDao = getQueryDao(request);
-        if (!checkCommunity(community)) return queryDao.resultJsonStr(404, "error", "not found");
+        if (!checkCommunity(community)) return ResultUtil.resultJsonStr(404, "error", "not found");
         return queryDao.saveFrontendEvents(community, requestBody);
     }
 
     public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
-        if (!checkCommunity(community) && !community.equals("xihe")) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        if (!checkCommunity(community) && !community.equals("xihe")) return ResultUtil.resultJsonStr(404, "error", "not found");
         if(body.getFeedbackValue() > 5 || body.getFeedbackValue() < 1) {
             logger.info("Value must be between 1 and 5");
             throw new IllegalArgumentException("Value check error");
@@ -1552,7 +1552,7 @@ public class QueryService {
     }
 
     public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
-        if (!checkCommunity(params.getCommunity())) return getQueryDao(request).resultJsonStr(404, "error", "not found");
+        if (!checkCommunity(params.getCommunity())) return ResultUtil.resultJsonStr(404, "error", "not found");
         if (token == null) {
             logger.info("Token is not allowed null");
             throw new IllegalArgumentException("Token can not be null");
