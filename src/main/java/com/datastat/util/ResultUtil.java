@@ -20,10 +20,12 @@ public class ResultUtil {
     }
 
     public static String resultJsonStr(int code, Object data, String msg, Map<String, Object> map) {
+        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
         HashMap<String, Object> resMap = new HashMap<>();
         resMap.put("code", code);
         resMap.put("data", data);
         resMap.put("msg", msg);
+        resMap.put("update_at", updateAt);
         resMap.putAll(map);
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.valueToTree(resMap).toString();
