@@ -1589,4 +1589,19 @@ public class QueryService {
         result = objectMapper.valueToTree(resMap).toString();
         return result;
     }
+
+    public String getCommunityMonthDowncount(HttpServletRequest request, String community, String repoID) {
+        QueryDao queryDao = getQueryDao(request);
+        if (!checkCommunity(community)) {
+            return ResultUtil.resultJsonStr(404, "error", "community not found");
+        }
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_community_month_downcount_" + community + repoID;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getCommunityMonthDowncount(queryConf, community, repoID);
+          redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

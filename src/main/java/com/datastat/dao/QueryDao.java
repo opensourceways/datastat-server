@@ -3717,4 +3717,49 @@ public class QueryDao {
         }
         return resultInfo;
     }
+
+    @SneakyThrows
+    public String getCommunityMonthDowncount(CustomPropertiesConfig queryConf, String community, String repoID) {
+        String query = String.format(queryConf.getOpenmindRepoQueryStr(), repoID);
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeSearch(esUrl, queryConf.getOpenmindRepoIndex(), query);
+
+        Response response = future.get();
+
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+
+        var dataObject = objectMapper.createObjectNode();
+        var jsonArray = objectMapper.createArrayNode();
+
+        try {
+            JsonNode dataNode = objectMapper.readTree(responseBody);
+            JsonNode hits = dataNode.get("hits").get("hits").get(0);
+            JsonNode source = hits.get("_source");
+            JsonNode repoName = source.get("repo_name");
+            JsonNode repoType = source.get("repo_type");
+            JsonNode aggregations = dataNode.get("aggregations");
+            JsonNode dataPerDay = aggregations.get("data_per_day");
+            JsonNode buckets = dataPerDay.get("buckets");
+
+            for(JsonNode b : buckets) {
+                var jsonObject = objectMapper.createObjectNode();
+                jsonObject.set("date",b.get("key_as_string"));
+                jsonObject.set("count",b.get("doc_count"));
+                jsonArray.add(jsonObject);
+            }
+            
+            dataObject.put("repo_id", repoID);
+            dataObject.set("repo_name", repoName);
+            dataObject.set("repo_type", repoType);
+            dataObject.set("daily_down_count", jsonArray);
+
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(dataObject), statusText);  
+
+          } catch (Exception e) {
+            logger.error("query/user/owner/repos get error", e.getMessage());
+
+            return ResultUtil.resultJsonStr(statusCode, null, "failed");
+        }
+    }
 }

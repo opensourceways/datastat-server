@@ -684,7 +684,7 @@ public class QueryController {
 
     @RequestMapping(value = "/repo/developer")
     public String queryRepoDeveloper(HttpServletRequest request,
-            @RequestParam (value = "community") String community,
+            @RequestParam(value = "community") String community,
             @RequestParam(value = "timeRange") String timeRange) {
         return queryService.queryRepoDeveloper(request, timeRange);
     }
@@ -765,5 +765,11 @@ public class QueryController {
             @PathVariable(value = "community") String community,
             @RequestBody String requestBody) {
         return queryService.saveFrontendEvents(request, community, requestBody);
+    }
+
+    @RequestMapping(value = "/monthdowncount/openmind/{repoID}")
+    public String monthDownCount(HttpServletRequest request,
+            @PathVariable(value = "repoID") String repoID ) {
+        return queryService.getCommunityMonthDowncount(request, "foundry", repoID);
     }
 }
