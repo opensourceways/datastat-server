@@ -14,6 +14,7 @@ package com.datastat.dao;
 import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.result.ReturnCode;
 import com.datastat.util.EsAsyncHttpUtil;
+import com.datastat.util.ResultUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.SneakyThrows;
 import org.asynchttpclient.AsyncHttpClient;
@@ -43,7 +44,7 @@ public class OpenLookengQueryDao extends QueryDao {
             contributorsCount += dataNode.get("data").get(item).longValue();
             statusText = dataNode.get("msg").textValue();
         }
-        return resultJsonStr(statusCode, item, Math.round(contributorsCount), statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, Math.round(contributorsCount), statusText);
     }
 
     @SneakyThrows
@@ -56,11 +57,11 @@ public class OpenLookengQueryDao extends QueryDao {
     @SneakyThrows
     @Override
     public String querySigs(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @Override
     public String queryDownload(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 }

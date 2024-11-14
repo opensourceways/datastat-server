@@ -12,6 +12,7 @@
 package com.datastat.dao;
 
 import com.datastat.model.CustomPropertiesConfig;
+import com.datastat.util.ResultUtil;
 import com.datastat.util.YamlUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.SneakyThrows;
@@ -70,7 +71,7 @@ public class MindSporeQueryDao extends QueryDao {
     @SneakyThrows
     @Override
     public String querySigs(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, queryConf.getSigQueryStr(), "Not Found");
+        return ResultUtil.resultJsonStr(404, item, queryConf.getSigQueryStr(), "Not Found");
     }
 
     /**
@@ -127,7 +128,7 @@ public class MindSporeQueryDao extends QueryDao {
             JsonNode res = bucket.get("_source");
             resList.add(res);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(resList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(resList), "ok");
     }
 
     /**
@@ -163,7 +164,7 @@ public class MindSporeQueryDao extends QueryDao {
         while ((current = in.readLine()) != null) {
             res += current + '\n';
         }
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     /**
@@ -181,7 +182,7 @@ public class MindSporeQueryDao extends QueryDao {
         String[] queries = queryConf.getAggContributorsQueryStr().split(";");
         String[] codeQueries = queryConf.getAggCodeContributorsQueryStr().split(";");
         count = queryCountContributors(indexes, queries) + queryCountContributors(indexes, codeQueries);
-        return resultJsonStr(200, item, count, "ok");
+        return ResultUtil.resultJsonStr(200, item, count, "ok");
     }
     /**
      * 根据指定的索引和查询语句查询贡献者数量.

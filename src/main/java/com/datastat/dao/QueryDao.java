@@ -1456,17 +1456,6 @@ public class QueryDao {
         return null;
     }
 
-
-    public String resultJsonStr(int code, String item, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":{\"" + item + "\":" + data + "},\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
-    public String resultJsonStr(int code, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":" + data + ",\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
     protected Map<String, Object> queryContributes(CustomPropertiesConfig queryConf, String community) {
         String giteeIndex = queryConf.getGiteeAllIndex();
         String claIndex = queryConf.getClaCorporationIndex();
@@ -3568,13 +3557,13 @@ public class QueryDao {
                 }
             }
             
-            return resultJsonStr(statusCode, objectMapper.valueToTree(target_repos), statusText);  
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(target_repos), statusText);  
 
           } catch (Exception e) {
             logger.error("query/user/owner/repos get error", e.getMessage());
             String emptyMsg = "No repos found for the user, please check the input parameters.";
 
-            return resultJsonStr(statusCode, null, emptyMsg);
+            return ResultUtil.resultJsonStr(statusCode, null, emptyMsg);
         }
     }
 
@@ -3586,7 +3575,7 @@ public class QueryDao {
       boolean hasCID = requestBody.contains("\"cId\"");
       if(!hasHeader || !hasBody || !hasCID){
         logger.error("saveFrontendEvents get request body error");
-        return resultJsonStr(400, "data", null, "Incorrect request body");
+        return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request body");
       }
 
       ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
@@ -3602,7 +3591,7 @@ public class QueryDao {
       // 对body里面event总数进行校验
       if (events.size() > 500) {
         logger.error("saveFrontendEvents get event error. events size over 500: events.size:{}", events.size());
-        return resultJsonStr(400, "data", null, "Incorrect number of events");
+        return ResultUtil.resultJsonStr(400, "data", null, "Incorrect number of events");
       }
 
       for (JsonNode event : events) {
@@ -3613,11 +3602,11 @@ public class QueryDao {
             boolean hasTime = event.has("time");
             boolean hasSID = event.has("sId");
             if(!hasEvent || !hasProperties || !hasTime || !hasSID){
-              return resultJsonStr(400, "data", null, "Incorrect request field");
+              return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request field");
             }
           } catch (Exception e) {
               logger.error("saveFrontendEvents get event error, {}", e.getMessage());
-              return resultJsonStr(400, "data", null, "Incorrect request field");
+              return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request field");
           }
 
 
@@ -3633,7 +3622,7 @@ public class QueryDao {
           kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(mergedJson).toString());
       }
 
-      return resultJsonStr(200, "cId", cId, "collect over");
+      return ResultUtil.resultJsonStr(200, "cId", cId, "collect over");
     }
     
     public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
@@ -3681,10 +3670,10 @@ public class QueryDao {
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
             }
             restHighLevelClient.close();
-            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("Global nps issue exception - {}", e.getMessage());
-            return resultJsonStr(400, null, "error");
+            return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
 
