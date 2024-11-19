@@ -75,6 +75,7 @@ import org.springframework.stereotype.Repository;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -3732,6 +3733,9 @@ public class QueryDao {
         var dataObject = objectMapper.createObjectNode();
         var jsonArray = objectMapper.createArrayNode();
 
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
         try {
             JsonNode dataNode = objectMapper.readTree(responseBody);
             JsonNode hits = dataNode.get("hits").get("hits").get(0);
@@ -3748,6 +3752,25 @@ public class QueryDao {
                 jsonObject.set("count",b.get("doc_count"));
                 jsonArray.add(jsonObject);
             }
+
+            int jSize = jsonArray.size();
+            for(int i = 29 ; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                String formattedDate = date.format(df);
+                boolean dateFound = false;
+                for(int j = 0; j < jSize; j++) {
+                    if(jsonArray.get(j).get("date").asText().equals(formattedDate)) {
+                        dateFound = true;
+                        break;
+                    }
+                }
+                if (!dateFound) {
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", 0);
+                    jsonArray.add(jsonObject);
+                }
+            }
             
             dataObject.put("repo_id", repoID);
             dataObject.set("repo_name", repoName);
@@ -3759,7 +3782,7 @@ public class QueryDao {
           } catch (Exception e) {
             logger.error("query/user/owner/repos get error", e.getMessage());
 
-            return ResultUtil.resultJsonStr(statusCode, null, "failed");
+            return ResultUtil.resultJsonStr(400, dataObject, "No data found for the given repo_id");
         }
     }
 }

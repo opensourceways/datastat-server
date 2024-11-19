@@ -767,9 +767,9 @@ public class QueryController {
         return queryService.saveFrontendEvents(request, community, requestBody);
     }
 
-    @RequestMapping(value = "/monthdowncount/openmind/{repoID}")
+    @RequestMapping(value = "/monthdowncount/openmind")
     public String monthDownCount(HttpServletRequest request,
-            @PathVariable(value = "repoID") String repoID ) {
+            @RequestParam(value = "repo_id") String repoID ) {
         return queryService.getCommunityMonthDowncount(request, "foundry", repoID);
     }
 }
