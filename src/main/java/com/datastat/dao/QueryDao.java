@@ -3753,36 +3753,39 @@ public class QueryDao {
                 jsonArray.add(jsonObject);
             }
 
-            int jSize = jsonArray.size();
-            for(int i = 29 ; i >= 0; i--) {
+            int bLen = buckets.size();
+            int j = 0;
+            var resJsonArray = objectMapper.createArrayNode();
+
+            for(int i = 29; i >= 0; i--) {
                 LocalDate date = today.minusDays(i);
                 String formattedDate = date.format(df);
-                boolean dateFound = false;
-                for(int j = 0; j < jSize; j++) {
-                    if(jsonArray.get(j).get("date").asText().equals(formattedDate)) {
-                        dateFound = true;
-                        break;
-                    }
-                }
-                if (!dateFound) {
+
+                if(j < bLen && jsonArray.get(j).get("date").asText().equals(formattedDate)) {
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", jsonArray.get(j).get("count").asInt());
+                    resJsonArray.add(jsonObject);
+                    j++;
+                }else{
                     var jsonObject = objectMapper.createObjectNode();
                     jsonObject.put("date", formattedDate);
                     jsonObject.put("count", 0);
-                    jsonArray.add(jsonObject);
+                    resJsonArray.add(jsonObject);
                 }
             }
             
             dataObject.put("repo_id", repoID);
             dataObject.set("repo_name", repoName);
             dataObject.set("repo_type", repoType);
-            dataObject.set("daily_down_count", jsonArray);
+            dataObject.set("daily_down_count", resJsonArray);
 
             return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(dataObject), statusText);  
 
           } catch (Exception e) {
             logger.error("query/user/owner/repos get error", e.getMessage());
 
-            return ResultUtil.resultJsonStr(400, dataObject, "No data found for the given repo_id");
+            return ResultUtil.resultJsonStr(statusCode, dataObject, "No data found for the given repo_id");
         }
     }
 }
