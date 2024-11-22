@@ -12,6 +12,8 @@
 package com.datastat.dao;
 
 import com.datastat.model.CustomPropertiesConfig;
+import com.datastat.util.ResultUtil;
+
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Repository;
 
@@ -21,23 +23,23 @@ public class FoundryDao extends QueryDao {
     @SneakyThrows
     @Override
     public String queryContributors(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @SneakyThrows
     @Override
     public String queryUsers(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @SneakyThrows
     @Override
     public String querySigs(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @Override
     public String queryDownload(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 }

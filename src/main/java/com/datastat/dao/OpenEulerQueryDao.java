@@ -13,6 +13,7 @@ package com.datastat.dao;
 
 import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.result.ReturnCode;
+import com.datastat.util.ResultUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.SneakyThrows;
 
@@ -51,12 +52,12 @@ public class OpenEulerQueryDao extends QueryDao {
             userCount += dataNode.get("data").get(item).intValue();
             statusText = dataNode.get("msg").textValue();
         }
-        return resultJsonStr(statusCode, item, Math.round(userCount), statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, Math.round(userCount), statusText);
     }
 
     @Override
     public String queryDownload(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(200, item, 0, "ok");
+        return ResultUtil.resultJsonStr(200, item, 0, "ok");
     }
 
     @Override
@@ -78,11 +79,11 @@ public class OpenEulerQueryDao extends QueryDao {
             while ((current = in.readLine()) != null) {
                 res += current + '\n';
             }
-            return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(400, null, "ok");
+        return ResultUtil.resultJsonStr(400, null, "ok");
     }
 
     @Override
@@ -97,6 +98,6 @@ public class OpenEulerQueryDao extends QueryDao {
         String responseBody = response.getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(responseBody);
         count = dataNode.get("aggregations").get("count").get("value").asLong();
-        return resultJsonStr(statusCode, item, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, count, statusText);
     }
 }
