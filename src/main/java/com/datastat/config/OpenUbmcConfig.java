@@ -8,8 +8,10 @@ import com.datastat.model.CustomPropertiesConfig;
 
 import lombok.Data;
 
-@ConfigurationProperties(prefix = "software")
-@PropertySource(value = {"file:${config.path}/software.properties"}, encoding = "UTF-8")
-@Configuration("softwareConf")
+@ConfigurationProperties(prefix = "openubmc")
+@PropertySource(value = {"file:${config.path}/openubmc.properties"}, ignoreResourceNotFound = true, encoding = "UTF-8")
+@Configuration("openubmcConf")
 @Data
-public class SoftwareConfig extends CustomPropertiesConfig { }
+public class OpenUbmcConfig extends CustomPropertiesConfig {
+    
+}

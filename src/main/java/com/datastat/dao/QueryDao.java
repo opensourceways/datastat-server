@@ -158,28 +158,28 @@ public class QueryDao {
             JsonNode bucket = buckets.next();
             count += bucket.get("1").get("value").asLong();
         }
-        return resultJsonStr(statusCode, item, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, count, statusText);
     }
 
     @SneakyThrows
     public String queryUsers(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @SneakyThrows
     public String queryNoticeUsers(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "Not Found");
+        return ResultUtil.resultJsonStr(404, item, 0, "Not Found");
     }
 
     @SneakyThrows
     public String queryModuleNums(CustomPropertiesConfig queryConf, String item) {
         String[] communities = queryConf.getMultiCommunity().split(",");
         int temp = 0;
-        String result = resultJsonStr(404, item, 0, "Not Found");
+        String result = ResultUtil.resultJsonStr(404, item, 0, "Not Found");
         for (int i = 0; i < communities.length; i++) {
             if (i == communities.length - 1) {
                 temp = temp + objectMapper.readTree(getGiteeResNum(queryConf.getAccessToken(), communities[i])).get("data").get("modulenums").intValue();
-                result = resultJsonStr(200, item, temp, "OK");
+                result = ResultUtil.resultJsonStr(200, item, temp, "OK");
             } else {
                 temp = temp + objectMapper.readTree(getGiteeResNum(queryConf.getAccessToken(), communities[i])).get("data").get("modulenums").intValue();
             }
@@ -189,7 +189,7 @@ public class QueryDao {
 
     @SneakyThrows
     public String queryBusinessOsv(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(200, item, queryConf.getBusinessOsv(), "OK");
+        return ResultUtil.resultJsonStr(200, item, queryConf.getBusinessOsv(), "OK");
     }
 
     @SneakyThrows
@@ -212,7 +212,7 @@ public class QueryDao {
             JsonNode bucket = buckets.next();
             count = bucket.get("count").get("value").asInt();
         }
-        return resultJsonStr(statusCode, item, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, count, statusText);
     }
 
     @SneakyThrows
@@ -225,12 +225,12 @@ public class QueryDao {
         String responseBody = response.getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(responseBody);
         count = dataNode.get("count").asLong();
-        return resultJsonStr(statusCode, item, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, item, count, statusText);
     }
 
     @SneakyThrows
     public String queryIsvCount(CustomPropertiesConfig queryConf, String item) {
-        return resultJsonStr(404, item, 0, "not found");
+        return ResultUtil.resultJsonStr(404, item, 0, "not found");
     }
 
     @SneakyThrows
@@ -334,8 +334,8 @@ public class QueryDao {
             restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
         restHighLevelClient.close();
 
-        String res = resultJsonStr(200, item, 0, "there`s no user");
-        if (users.size() > 0) res = resultJsonStr(200, item + "_count", users.size(), "update success");
+        String res = ResultUtil.resultJsonStr(200, item, 0, "there`s no user");
+        if (users.size() > 0) res = ResultUtil.resultJsonStr(200, item + "_count", users.size(), "update success");
 
         return res;
     }
@@ -415,7 +415,7 @@ public class QueryDao {
             dataMap.put("month", month);
             dataMap.put("count", count);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
     }
 
     @SneakyThrows
@@ -471,10 +471,10 @@ public class QueryDao {
             if (request.requests().size() != 0)
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
             restHighLevelClient.close();
-            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("exception", e);
-            return resultJsonStr(400, null, "error");
+            return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
 
@@ -483,20 +483,20 @@ public class QueryDao {
         String format = String.format(queryConf.getObsDetailsQueryStr(), branch);
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getObsDetailsIndex(), format);
         ArrayList<JsonNode> obsDetails = getObsDetails(future);
-        return resultJsonStr(200, objectMapper.valueToTree(obsDetails), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(obsDetails), "ok");
     }
 
     @SneakyThrows
     public String queryIsoBuildTimes(CustomPropertiesConfig queryConf, IsoBuildTimesVo body) {
         ArrayList<JsonNode> dataList = getIsoBuildTimes(queryConf, body);
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
     public String querySigDetails(CustomPropertiesConfig queryConf, SigDetailsVo body) {
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getSigDetailsIndex(), queryConf.getSigDetailsQueryStr());
         ArrayList<JsonNode> dataList = getSigDetails(future, queryConf, body);
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -548,7 +548,7 @@ public class QueryDao {
         JsonNode resNode = objectMapper.valueToTree(dataMap);
         dataList.add(resNode);
 
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -573,7 +573,7 @@ public class QueryDao {
             JsonNode resNode = objectMapper.valueToTree(dataMap);
             dataList.add(resNode);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -601,7 +601,7 @@ public class QueryDao {
             JsonNode resNode = objectMapper.valueToTree(dataMap);
             dataList.add(resNode);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -697,7 +697,7 @@ public class QueryDao {
             }
         }     
         kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(resMap).toString());
-        return resultJsonStr(200, "track_id", id, "collect over");
+        return ResultUtil.resultJsonStr(200, "track_id", id, "collect over");
     }
 
     @SneakyThrows
@@ -713,7 +713,7 @@ public class QueryDao {
         resMap.put("community", community);
 
         kafkaDao.sendMess(env.getProperty("producer.topic.userApply"), id, objectMapper.valueToTree(resMap).toString());
-        return resultJsonStr(200, null, "ok");
+        return ResultUtil.resultJsonStr(200, null, "ok");
     }
 
     @SneakyThrows
@@ -731,7 +731,7 @@ public class QueryDao {
         }
         dataMap.put(community, sigList);
 
-        return resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
     }
 
     @SneakyThrows
@@ -749,7 +749,7 @@ public class QueryDao {
             HashMap<String, Object> data = objectMapper.convertValue(bucket, HashMap.class);
             sigList.add(data);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
     }
 
     @SneakyThrows
@@ -768,7 +768,7 @@ public class QueryDao {
             repoList.add(repo);
         }
 
-        return resultJsonStr(200, objectMapper.valueToTree(repoList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(repoList), "ok");
     }
 
     @SneakyThrows
@@ -790,7 +790,7 @@ public class QueryDao {
         HashMap<String, Object> dataMap = new HashMap<>();
         dataMap.put(community, companyNameList);
 
-        return resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
     }
 
     @SneakyThrows
@@ -824,7 +824,7 @@ public class QueryDao {
         String label = queryDao.querySigLabel(queryConf).getOrDefault(group, null);
         String queryStr = queryConf.getAggGroupCountQueryStr(groupField, group, contributeType, timeRange, label);
         if (queryStr == null)
-            return resultJsonStr(400, contributeType, ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
+            return ResultUtil.resultJsonStr(400, contributeType, ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
 
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, queryStr);
         String responseBody = future.get().getResponseBody(UTF_8);
@@ -866,7 +866,7 @@ public class QueryDao {
             dataList.add(resNode);
         }
 
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -917,7 +917,7 @@ public class QueryDao {
             dataList.add(resNode);
             rank += 1;
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -946,7 +946,7 @@ public class QueryDao {
             item.put("contribute", contribute);
             resList.add(item);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(resList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(resList), "ok");
     }
 
     public HashMap<String, Object> getSigFeature(HashMap<String, HashMap<String, String>> sigFeatures, String sig) {
@@ -1018,7 +1018,7 @@ public class QueryDao {
         dataMap.put("value", companyUsersList);
         List<String> metrics = Arrays.asList(new String[]{"D0", "D1", "D2"});
         dataMap.put("metrics", metrics);
-        return resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataMap), "ok");
     }
 
     @SneakyThrows
@@ -1033,7 +1033,7 @@ public class QueryDao {
             String repository = hit.get("_source").get("repository").asText();
             dataList.add(repository);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -1067,7 +1067,7 @@ public class QueryDao {
             data.put("en_group", enGroup);
             sigList.add(data);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
     }
 
     @SneakyThrows
@@ -1114,7 +1114,7 @@ public class QueryDao {
             data.remove("value");
             sigList.add(data);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
     }
 
     @SneakyThrows
@@ -1158,7 +1158,7 @@ public class QueryDao {
             JsonNode resNode = objectMapper.valueToTree(dataMap);
             dataList.add(resNode);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(dataList), "ok");
     }
 
     @SneakyThrows
@@ -1456,17 +1456,6 @@ public class QueryDao {
         return null;
     }
 
-
-    public String resultJsonStr(int code, String item, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":{\"" + item + "\":" + data + "},\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
-    public String resultJsonStr(int code, Object data, String msg) {
-        String updateAt = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date());
-        return "{\"code\":" + code + ",\"data\":" + data + ",\"msg\":\"" + msg + "\",\"update_at\":\"" + updateAt + "\"}";
-    }
-
     protected Map<String, Object> queryContributes(CustomPropertiesConfig queryConf, String community) {
         String giteeIndex = queryConf.getGiteeAllIndex();
         String claIndex = queryConf.getClaCorporationIndex();
@@ -1556,7 +1545,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataFlag, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataFlag, count, statusText);
     }
 
     protected String parseDurationAggFromProjectHostArchPackageResult(ListenableFuture<Response> future, String dataFlag) {
@@ -1606,7 +1595,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
     }
 
     protected String getSumBucketValue(ListenableFuture<Response> future, String dataFlag) {
@@ -1630,7 +1619,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
     }
 
     protected String getCountResult(ListenableFuture<Response> future, String dataFlag) {
@@ -1651,7 +1640,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataFlag, Math.round(count), statusText);
     }
 
     protected String getGiteeResNum(String access_token, String community) throws Exception {
@@ -1679,7 +1668,7 @@ public class QueryDao {
         ListenableFuture<Response> responseListenableFuture = client.executeRequest(request);
         Response response = responseListenableFuture.get();
         String total_count = response.getHeader("total_count");
-        return resultJsonStr(response.getStatusCode(), "modulenums", (total_count == null ? 0 : total_count), response.getStatusText());
+        return ResultUtil.resultJsonStr(response.getStatusCode(), "modulenums", (total_count == null ? 0 : total_count), response.getStatusText());
     }
 
     protected String getOrgStarAndForkRes(ListenableFuture<Response> future, String dataflage, String community) {
@@ -1726,7 +1715,7 @@ public class QueryDao {
             statusCode = 500;
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataflage, badReq, statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataflage, badReq, statusText);
     }
 
     protected String dataDesensitizationProcessing(String jsonRes, String item) {
@@ -1747,7 +1736,7 @@ public class QueryDao {
             return objectMapper.valueToTree(resMap).toString();
         } catch (Exception e) {
             logger.error("exception", e);
-            return resultJsonStr(400, item, ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
+            return ResultUtil.resultJsonStr(400, item, ReturnCode.RC400.getMessage(), ReturnCode.RC400.getMessage());
         }
     }
 
@@ -1890,7 +1879,7 @@ public class QueryDao {
             statusCode = response.getStatusCode();
             statusText = response.getStatusText();
 
-            if (statusCode != 200) return resultJsonStr(statusCode, resJsonArray, statusText);
+            if (statusCode != 200) return ResultUtil.resultJsonStr(statusCode, resJsonArray, statusText);
 
             String responseBody = response.getResponseBody(UTF_8);
             JsonNode dataNode = objectMapper.readTree(responseBody);
@@ -1913,7 +1902,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, resJsonArray, statusText);
+        return ResultUtil.resultJsonStr(statusCode, resJsonArray, statusText);
     }
 
     protected SearchSourceBuilder assembleResultSourceBuilder(String sortKeyword, BuildCheckInfoQueryVo buildCheckInfoQueryVo) {
@@ -2283,7 +2272,7 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, dataFlag, badReq, statusText);
+        return ResultUtil.resultJsonStr(statusCode, dataFlag, badReq, statusText);
     }
 
     protected RestHighLevelClient getRestHighLevelClient() {
@@ -2384,7 +2373,7 @@ public class QueryDao {
             response = future.get();
             statusCode = response.getStatusCode();
             statusText = response.getStatusText();
-            if (statusCode != 200) return resultJsonStr(statusCode, recordJsonObj, statusText);
+            if (statusCode != 200) return ResultUtil.resultJsonStr(statusCode, recordJsonObj, statusText);
 
             String responseBody = response.getResponseBody(UTF_8);
             JsonNode dataNode = objectMapper.readTree(responseBody);
@@ -2394,11 +2383,11 @@ public class QueryDao {
                 recordJsonObj.put("closed", record.get("closed").get("value"));
                 recordJsonObj.put("open", record.get("open").get("value"));
             }
-            return resultJsonStr(statusCode, objectMapper.valueToTree(recordJsonObj), statusText);
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(recordJsonObj), statusText);
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(statusCode, recordJsonObj, statusText);
+        return ResultUtil.resultJsonStr(statusCode, recordJsonObj, statusText);
     }
 
     @SneakyThrows
@@ -2414,7 +2403,7 @@ public class QueryDao {
             JsonNode source = hits.next().get("_source");
             companies.add(source.get("corporation_name").asText());
         }
-        return resultJsonStr(200, objectMapper.valueToTree(companies), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(companies), "ok");
     }
 
     public String getIPLocation(String ip) {
@@ -2451,15 +2440,15 @@ public class QueryDao {
         } catch (Exception e) {
             logger.error("exception", e);
         }
-        return resultJsonStr(404, null, "error");
+        return ResultUtil.resultJsonStr(404, null, "error");
     }
 
     public String getEcosystemRepoInfo(CustomPropertiesConfig queryConf, String ecosystemType, String lang, String sortOrder) {
-        return resultJsonStr(400, null, "error");
+        return ResultUtil.resultJsonStr(400, null, "error");
     }
 
     public String getSigReadme(CustomPropertiesConfig queryConf, String sig, String lang) {
-        return resultJsonStr(400, null, "error");
+        return ResultUtil.resultJsonStr(400, null, "error");
     }
 
     @SneakyThrows
@@ -2473,7 +2462,7 @@ public class QueryDao {
     public String putMeetupApplyForm(CustomPropertiesConfig queryConf, String item, MeetupApplyForm meetupApplyForm, String token) {
         ArrayList<String> errorMesseages = meetupApplyForm.validMeetupApplyFormField();
         if (errorMesseages.size() > 0) {
-            return resultJsonStr(400, item, objectMapper.valueToTree(errorMesseages), "write error");
+            return ResultUtil.resultJsonStr(400, item, objectMapper.valueToTree(errorMesseages), "write error");
         }
         Map meetupApplyFormMap = objectMapper.convertValue(meetupApplyForm, Map.class);
         return putDataSource(queryConf.getMeetupApplyFormIndex(), meetupApplyFormMap, token);
@@ -2526,11 +2515,11 @@ public class QueryDao {
                 continue;
             versions.add(version);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(versions), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(versions), "ok");
     }
 
     public String getRepoReadme(CustomPropertiesConfig queryConf, String name) {
-        return resultJsonStr(400, null, "error");
+        return ResultUtil.resultJsonStr(400, null, "error");
     }
 
     public HashMap<String, Object> getExtends(QaBotRequestBody body){
@@ -2616,7 +2605,7 @@ public class QueryDao {
             return ans;
         } catch (Exception e) {
             logger.error("exception", e);
-            return resultJsonStr(400, "error", "error");
+            return ResultUtil.resultJsonStr(400, "error", "error");
         }
     }
 
@@ -2703,17 +2692,17 @@ public class QueryDao {
             if (request.requests().size() != 0)
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
             restHighLevelClient.close();
-            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("exception", e);
-            return resultJsonStr(400, null, "error");
+            return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
 
     @SneakyThrows
     public String queryInnovationItems(CustomPropertiesConfig queryConf) {
         List<String> res = getInnovationItemsNames(queryConf);
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
@@ -2733,7 +2722,7 @@ public class QueryDao {
     public String queryAllProjects(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField, String type) {
         String allProjectQueryStr = queryConf.getAggIssueQueryStr(queryConf, groupField, timeRange, type);
         if (StringUtils.isBlank(allProjectQueryStr)) {
-            return resultJsonStr(400, null, "incorrect query");
+            return ResultUtil.resultJsonStr(400, null, "incorrect query");
         }
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), allProjectQueryStr);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
@@ -2746,16 +2735,16 @@ public class QueryDao {
         } else if ("sig".equals(groupField)) {
             res = packageBySig(buckets);
         } else {
-            return resultJsonStr(400, null, "incorrect input parameter");
+            return ResultUtil.resultJsonStr(400, null, "incorrect input parameter");
         }
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
     public String querySigContributors(CustomPropertiesConfig queryConf, String community, String type, String timeRange) {
         String sigContributeQueryStr = queryConf.getAggSigContributeQueryStr(queryConf, type, timeRange);
         if (StringUtils.isBlank(sigContributeQueryStr)) {
-            return resultJsonStr(400, null, "incorrect query");
+            return ResultUtil.resultJsonStr(400, null, "incorrect query");
         }
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), sigContributeQueryStr);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
@@ -2763,7 +2752,7 @@ public class QueryDao {
         List<Map<String, Object>> res = new ArrayList<>();
         // 按照SIG组排序
         res = packageBySig(buckets);
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
@@ -2851,7 +2840,7 @@ public class QueryDao {
     public String queryByProjectName(CustomPropertiesConfig queryConf, String community, String timeRange, String groupField, String projectName, String type) {
         // 查询单个项目的结果
         List<Map<String, Object>> res = getSingleProject(queryConf, community, timeRange, groupField, projectName, type);
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
@@ -2891,7 +2880,7 @@ public class QueryDao {
         } else {
             merged = mergeCompany(res);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(merged), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(merged), "ok");
     }
 
     @SneakyThrows
@@ -2967,14 +2956,14 @@ public class QueryDao {
             res = dataNode.get("hits").get("total").get("value").asLong();
             resMap.put(type, res);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(resMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(resMap), "ok");
     }
 
     @SneakyThrows
     public String getVersionFeature(CustomPropertiesConfig queryConf, String community, String version, String groupField) {
         String companyFeature = queryConf.getAggCompanyFeatureQueryStr(queryConf, version, groupField);
         if (StringUtils.isBlank(companyFeature)) {
-            return resultJsonStr(400, null, "incorrect query");
+            return ResultUtil.resultJsonStr(400, null, "incorrect query");
         }
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeFeatureIndex(), companyFeature);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
@@ -2986,22 +2975,22 @@ public class QueryDao {
         } else if ("sig".equals(groupField)) {
             res = packageBySig(buckets);
         } else {
-            return resultJsonStr(400, null, "incorrect input parameter");
+            return ResultUtil.resultJsonStr(400, null, "incorrect input parameter");
         }
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     @SneakyThrows
     public String getVersionSig(CustomPropertiesConfig queryConf, String community, String type, String version) {
         String sigPr = queryConf.getAggSigVersionQuery(queryConf, type, version);
         if (StringUtils.isBlank(sigPr)) {
-            return resultJsonStr(400, null, "incorrect query");
+            return ResultUtil.resultJsonStr(400, null, "incorrect query");
         }
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeVersionIndex(), sigPr);
         JsonNode dataNode = objectMapper.readTree(future.get().getResponseBody(UTF_8));
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
         List<Map<String, Object>> res = packageBySig(buckets);
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
     
     @SneakyThrows
@@ -3011,7 +3000,7 @@ public class QueryDao {
         } else if (timeRange == null && projectName == null && version != null) {  // 按照版本查找
             return queryByVersion(queryConf, community, type, version);
         } else {
-            return resultJsonStr(400, null, "incorrect input parameters.");
+            return ResultUtil.resultJsonStr(400, null, "incorrect input parameters.");
         }
     }
 
@@ -3025,14 +3014,14 @@ public class QueryDao {
             } else if ("pr".equals(type) || "issue".equals(type) || "comment".equals(type)) { // 度量指标：pr, issue, comment
                 return querySigContributors(queryConf, community, type, timeRange);
             } else {
-                return resultJsonStr(400, null, "incorrect input parameters.");
+                return ResultUtil.resultJsonStr(400, null, "incorrect input parameters.");
             }
         } else if ("allInnoItems".equals(projectName)) { // 项目范围：全部创新项目
             return queryAllInnoItems(queryConf, community, timeRange, "sig", type);
         } else if (projectNames.contains(projectName)) { // 项目范围：某个创新项目
             return queryByProjectName(queryConf, community, timeRange, "sig", projectName, type);
         } else {
-            return resultJsonStr(400, null, "incorrect input parameters.");
+            return ResultUtil.resultJsonStr(400, null, "incorrect input parameters.");
         }
     }
 
@@ -3043,7 +3032,7 @@ public class QueryDao {
         } else if ("pr".equals(type)) {
             return getVersionSig(queryConf, community, type, version);
         } else {
-            return resultJsonStr(400, null, "incorrect input parameters.");
+            return ResultUtil.resultJsonStr(400, null, "incorrect input parameters.");
         }
     }
 
@@ -3062,7 +3051,7 @@ public class QueryDao {
             JsonNode bucket = buckets.next();
             count += bucket.get("res").get("value").asInt();
         }
-        return resultJsonStr(statusCode, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, count, statusText);
     }
 
     @SneakyThrows
@@ -3080,7 +3069,7 @@ public class QueryDao {
         String responseBody = response.getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(responseBody);
         ArrayList<HashMap<String, Object>> resList = parseModelFoundryTrends(dataNode);
-        return resultJsonStr(statusCode, objectMapper.valueToTree(resList), statusText);
+        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resList), statusText);
     }
 
     @SneakyThrows
@@ -3114,14 +3103,14 @@ public class QueryDao {
         JsonNode dataNode = objectMapper.readTree(resBody);
         JsonNode hits = dataNode.get("hits").get("hits");
         if (!hits.elements().hasNext()) {
-            return resultJsonStr(400, null, "repo error");
+            return ResultUtil.resultJsonStr(400, null, "repo error");
         }
         JsonNode source = hits.get(0).get("_source");
         HashMap<String, Object> result = new HashMap<>();
         result.put("gitee_id", source.get("user_login"));
         result.put("name", source.get("name"));
         result.put("email", source.get("email"));
-        return resultJsonStr(200, objectMapper.valueToTree(result), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(result), "ok");
     }
 
     @SneakyThrows
@@ -3149,7 +3138,7 @@ public class QueryDao {
             item.put(repoName[repoName.length - 1], repoInfo);
             result.add(item);
         }
-        return resultJsonStr(200, objectMapper.valueToTree(result), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(result), "ok");
     }
 
     @SneakyThrows
@@ -3160,10 +3149,10 @@ public class QueryDao {
         JsonNode dataNode = objectMapper.readTree(resBody);
         JsonNode hits = dataNode.get("hits").get("hits");
         if (!hits.elements().hasNext()) {
-            return resultJsonStr(400, null, "repo error");
+            return ResultUtil.resultJsonStr(400, null, "repo error");
         }
         JsonNode hit = hits.get(0).get("_source");
-        return resultJsonStr(200, objectMapper.valueToTree(hit), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(hit), "ok");
     }
 
     @SneakyThrows
@@ -3178,11 +3167,11 @@ public class QueryDao {
         JsonNode dataNode = objectMapper.readTree(resBody);
         JsonNode hits = dataNode.get("hits").get("hits");
         if (!hits.elements().hasNext()) {
-            return resultJsonStr(400, null, "repo error");
+            return ResultUtil.resultJsonStr(400, null, "repo error");
         }
         JsonNode hit = hits.get(0);
         JsonNode sigName = hit.get("_source").get("sig_name");
-        return resultJsonStr(200, objectMapper.valueToTree(sigName), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigName), "ok");
     }
 
     @SneakyThrows
@@ -3203,7 +3192,7 @@ public class QueryDao {
                 resMap.add(info);
             }
         }
-        return resultJsonStr(200, objectMapper.valueToTree(resMap), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(resMap), "ok");
     }
 
     @SneakyThrows
@@ -3213,7 +3202,7 @@ public class QueryDao {
         String resBody = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getTrackerIndex(), query).get().getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(resBody);
         JsonNode total = dataNode.get("hits").get("total").get("value");
-        return resultJsonStr(200, total, "ok");
+        return ResultUtil.resultJsonStr(200, total, "ok");
     }
 
     public int putExportData(CustomPropertiesConfig queryConf, String path, String dataPath) {
@@ -3261,7 +3250,7 @@ public class QueryDao {
         String msg = "error";
         HashMap<String, Object> resMap = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
-        String nowStr = now.toString().split("\\.")[0] + "+08:00";
+        String nowStr = now.toString().split("T")[0];
         resMap.put("count", body.getCount());
         resMap.put("created_at", nowStr);
 
@@ -3277,7 +3266,7 @@ public class QueryDao {
             msg = "success";
         }
         restHighLevelClient.close();
-        return resultJsonStr(status_code, null, msg);
+        return ResultUtil.resultJsonStr(status_code, null, msg);
     }
 
     @SneakyThrows
@@ -3295,7 +3284,7 @@ public class QueryDao {
             JsonNode bucket = buckets.next();
             count += bucket.get("res").get("value").asInt();
         }
-        return resultJsonStr(statusCode, count, statusText);
+        return ResultUtil.resultJsonStr(statusCode, count, statusText);
     }
 
     @SneakyThrows
@@ -3316,8 +3305,8 @@ public class QueryDao {
             JsonNode item = testStr.get(i);
             ObjectNode bucket = objectMapper.createObjectNode();
             try{
-              bucket.put("repo_id",item.get("details").get("buckets").get(0).get("key").asText());
-              bucket.put("repo",item.get("key").asText());
+              bucket.put("repo",item.get("details").get("buckets").get(0).get("key").asText());
+              bucket.put("repo_id",item.get("key").asText());
               bucket.put("download",item.get("details").get("buckets").get(0).get("sum").get("value").asInt());
             } catch (Exception e) {
               logger.error("function queryModelFoundryCountSH get error - {}", e.getMessage());
@@ -3325,7 +3314,7 @@ public class QueryDao {
             buckets.add(bucket);
           }
         }
-        return resultJsonStr(statusCode, buckets, statusText);
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
     }
 
     @SneakyThrows
@@ -3347,9 +3336,9 @@ public class QueryDao {
             userInfo.put("gitee_id", user);
             userInfo.put("name", user);
             userInfo.put("email", email);
-            return resultJsonStr(statusCode, objectMapper.valueToTree(userInfo), statusText);
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(userInfo), statusText);
         }
-        return resultJsonStr(statusCode, user, statusText);
+        return ResultUtil.resultJsonStr(statusCode, user, statusText);
     }
 
     @SneakyThrows
@@ -3387,7 +3376,7 @@ public class QueryDao {
                 buckets.add(bucket);
             }
         }
-        return resultJsonStr(statusCode, buckets, statusText);
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
     }
 
     public boolean checkQueryAllData(CustomPropertiesConfig queryConf, JsonNode newData) {
@@ -3416,7 +3405,7 @@ public class QueryDao {
                 put("isCoreRepo", repoListStr.contains(repository) ? "1" : "0");
             }});
         }
-        return resultJsonStr(200, objectMapper.valueToTree(res), "ok");
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(res), "ok");
     }
 
     public String putTeamupApplyForm(CustomPropertiesConfig queryConf, String item, TeamupApplyForm teamupApplyForm, String token) {
@@ -3434,12 +3423,12 @@ public class QueryDao {
         long count = dataNode.get("count").asLong();
         // user submits an application no more than twice
         if (count >= Integer.parseInt(env.getProperty("register.cnt", "2"))) {
-            return resultJsonStr(400, null, "Repeat registration");
+            return ResultUtil.resultJsonStr(400, null, "Repeat registration");
         }
         Map sigGatheringsMap = objectMapper.convertValue(sigGatherings, Map.class);
         ArrayList<String> errorMesseages = sigGatherings.validField(queryConf.getSigGatheringTemplate());
         if (errorMesseages.size() > 0) {
-            return resultJsonStr(400, item, objectMapper.valueToTree(errorMesseages), "write error");
+            return ResultUtil.resultJsonStr(400, item, objectMapper.valueToTree(errorMesseages), "write error");
         }
         String result =  putDataSource(queryConf.getSigGatheringIndex(), sigGatheringsMap, token);
 
@@ -3531,10 +3520,10 @@ public class QueryDao {
             if (request.requests().size() != 0)
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
             restHighLevelClient.close();
-            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("nps issue exception - {}", e.getMessage());
-            return resultJsonStr(400, null, "error");
+            return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
 
@@ -3568,16 +3557,73 @@ public class QueryDao {
                 }
             }
             
-            return resultJsonStr(statusCode, objectMapper.valueToTree(target_repos), statusText);  
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(target_repos), statusText);  
 
           } catch (Exception e) {
             logger.error("query/user/owner/repos get error", e.getMessage());
             String emptyMsg = "No repos found for the user, please check the input parameters.";
 
-            return resultJsonStr(statusCode, null, emptyMsg);
+            return ResultUtil.resultJsonStr(statusCode, null, emptyMsg);
         }
     }
 
+    @SneakyThrows
+    public String saveFrontendEvents(String community, String requestBody) {
+      // 检测请求体是否含有header和body
+      boolean hasHeader = requestBody.contains("\"header\"");
+      boolean hasBody = requestBody.contains("\"body\"");
+      boolean hasCID = requestBody.contains("\"cId\"");
+      if(!hasHeader || !hasBody || !hasCID){
+        logger.error("saveFrontendEvents get request body error");
+        return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request body");
+      }
+
+      ObjectNode reqBody = objectMapper.readValue(requestBody, ObjectNode.class);
+      JsonNode header = reqBody.get("header");
+      ObjectNode headerObj = objectMapper.treeToValue(header, ObjectNode.class);
+      JsonNode events = reqBody.get("body");
+      String cId = header.get("cId").asText();  
+
+      Date now = new Date();
+      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+      String nowStr = simpleDateFormat.format(now);
+
+      // 对body里面event总数进行校验
+      if (events.size() > 500) {
+        logger.error("saveFrontendEvents get event error. events size over 500: events.size:{}", events.size());
+        return ResultUtil.resultJsonStr(400, "data", null, "Incorrect number of events");
+      }
+
+      for (JsonNode event : events) {
+          // 对单个事件必要字段校验 event、propeties、time、sId
+          try {
+            boolean hasEvent = event.has("event");
+            boolean hasProperties = event.has("properties");
+            boolean hasTime = event.has("time");
+            boolean hasSID = event.has("sId");
+            if(!hasEvent || !hasProperties || !hasTime || !hasSID){
+              return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request field");
+            }
+          } catch (Exception e) {
+              logger.error("saveFrontendEvents get event error, {}", e.getMessage());
+              return ResultUtil.resultJsonStr(400, "data", null, "Incorrect request field");
+          }
+
+
+          ObjectNode eventObj = objectMapper.treeToValue(event, ObjectNode.class);
+
+          String id = UUID.randomUUID().toString();   //生成唯一不重复id
+
+          eventObj.put("created_at", nowStr);
+          eventObj.put("community", community);
+
+          JsonNode mergedJson = objectMapper.updateValue(eventObj, headerObj);
+
+          kafkaDao.sendMess(env.getProperty("producer.topic.tracker"), id, objectMapper.valueToTree(mergedJson).toString());
+      }
+
+      return ResultUtil.resultJsonStr(200, "cId", cId, "collect over");
+    }
     
     public String putGlobalNpsIssue(CustomPropertiesConfig queryConf, String token, String community, NpsBody body) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
@@ -3624,10 +3670,10 @@ public class QueryDao {
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
             }
             restHighLevelClient.close();
-            return resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("Global nps issue exception - {}", e.getMessage());
-            return resultJsonStr(400, null, "error");
+            return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
 
