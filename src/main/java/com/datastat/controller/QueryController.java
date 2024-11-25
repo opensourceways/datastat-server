@@ -26,6 +26,7 @@ import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 import com.datastat.model.vo.*;
 import com.datastat.service.QueryService;
@@ -676,10 +677,16 @@ public class QueryController {
         return queryService.queryModelFoundrySH(request, repo);
     }
 
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
     @RequestMapping(value = "/modelfoundry/download/count")
-    public String queryModelFoundryCountPath(HttpServletRequest request,
-            @RequestParam(value = "path", required = false) String path) {
-        return queryService.queryModelFoundryCountPath(request, path);
+    public String queryModelFoundryCountPath(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryModelFoundryCountPath(request, condition);
     }
 
     @RequestMapping(value = "/repo/developer")

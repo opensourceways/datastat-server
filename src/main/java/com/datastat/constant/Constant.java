@@ -17,6 +17,36 @@ public final class Constant {
     public static final String FEEDBACK_REPO = "easy-software";
 
     /**
+     * VALID_APPROVAL_REG used to match input string.
+     */
+    public static final String VALID_APPROVAL_REG = "model|dataset|space";
+
+    /**
+     * VALID_DATE_REG used to match input string.
+     */
+    public static final String VALID_DATE_REG = "^(\\d{4})-(\\d{2})-(\\d{2})$";
+
+    /**
+     * START_DATE used to match input string.
+     */
+    public static final String START_DATE = "1970-01-01";
+
+    /**
+     * END_DATE used to match input string.
+     */
+    public static final String END_DATE = "2050-01-01";
+
+    /**
+     * VALID_OPENMIND_ENV_REG used to match input string.
+     */
+    public static final String VALID_OPENMIND_ENV_REG = "pro|yidong|sh";
+
+    /**
+     * VALID_REPO_ID used to match input string.
+     */
+    public static final String VALID_REPO_ID = "^\\d+$|^\\*$";
+
+    /**
      * openmind社区.
      */
     public static final String OPENMIND_COMMUNITY = "openmind";

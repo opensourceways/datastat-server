@@ -26,6 +26,7 @@ import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.UserTagInfo;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 import com.datastat.model.vo.*;
 import com.datastat.model.yaml.*;
@@ -3287,11 +3288,18 @@ public class QueryDao {
         return ResultUtil.resultJsonStr(statusCode, count, statusText);
     }
 
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
     @SneakyThrows
-    public String queryModelFoundryCountPath(CustomPropertiesConfig queryConf, String path) {
-        long currentTimeMillis = System.currentTimeMillis();
-        String query = String.format(queryConf.getModelFoundryDownloadCountQueryStr(), 0, currentTimeMillis);
-        String index = queryConf.getModelFoundryPathIndex(path);
+    public String queryModelFoundryCountPath(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getModelFoundryDownloadCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
+        String index = queryConf.getModelFoundryPathIndex(condition.getPath());
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();
         int statusCode = response.getStatusCode();

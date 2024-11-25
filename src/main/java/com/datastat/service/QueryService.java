@@ -40,6 +40,7 @@ import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 
 import jakarta.annotation.PostConstruct;
@@ -1407,14 +1408,26 @@ public class QueryService {
         return result;
     }
 
-    public String queryModelFoundryCountPath(HttpServletRequest request, String path) {
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
+    public String queryModelFoundryCountPath(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        path = path == null ? "pro" : path;
-        String key = "modelfoundrycownload_repo_count_" + path;
+        StringBuilder sb = new StringBuilder("modelfoundrycownload_repo_count_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.queryModelFoundryCountPath(queryConf, path);
+            result = queryDao.queryModelFoundryCountPath(queryConf, condition);
             redisDao.set(key, result, 300l);
         }
         return result;

@@ -1,6 +1,7 @@
 package com.datastat.ds;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.datastat.ds.common.CommonUtil;
 import com.datastat.ds.common.ReadCase;
+import com.datastat.util.ObjectMapperUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -52,5 +54,20 @@ class DsApplicationTests {
 			CommonUtil.assertOk(res);
 		}
 
+	}
+
+	@Test
+	void testModelFoundryDownload() throws Exception {
+		JsonNode cases = ReadCase.readFile("src/test/java/com/datastat/ds/case/TestCase.json");
+		JsonNode testCases = cases.get("modelfoundry_download_count");
+		for (JsonNode testCase : testCases) {
+			Map<String, String> caseMap = ObjectMapperUtil.jsonToMap(testCase);
+			MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
+			for (Map.Entry<String, String> entry : caseMap.entrySet()) {
+				paramMap.add(entry.getKey(), entry.getValue());
+			}
+			String res = CommonUtil.executeGet(mockMvc, "/query/modelfoundry/download/count", paramMap);
+			CommonUtil.assertOk(res);
+		}
 	}
 }
