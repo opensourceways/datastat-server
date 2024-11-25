@@ -1445,14 +1445,26 @@ public class QueryService {
         return result;
     }
 
-    public String queryViewCount(HttpServletRequest request, String path) {
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest.
+     * @param condition search condition
+     * @return Response string.
+     */
+    public String queryViewCount(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        path = path == null ? "space" : path;
-        String key = "view_count_" + path;
+        StringBuilder sb = new StringBuilder("modelfoundryview_count_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.queryViewCount(queryConf, path);
+            result = queryDao.queryViewCount(queryConf, condition);
             redisDao.set(key, result, redisDefaultExpire);
         }
         return result;

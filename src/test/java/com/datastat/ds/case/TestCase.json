@@ -36,5 +36,26 @@
             "repoType": "space",
             "path": "sh"
         }
+    ],
+    "modelfoundry_view_count": [
+        {
+            "start": "2024-11-01",
+            "end": "2024-11-21",
+            "repoType": "model",
+            "repoId": "13046"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "pro",
+            "repoType": "dataset"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "yidong"
+        },
+        {
+            "repoType": "space",
+            "path": "sh"
+        }
     ]
 }
