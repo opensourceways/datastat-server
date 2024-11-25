@@ -1614,4 +1614,28 @@ public class QueryService {
         result = objectMapper.valueToTree(resMap).toString();
         return result;
     }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest.
+     * @param condition search condition
+     * @return Response string.
+     */
+    public String queryEventCount(HttpServletRequest request, RequestParams condition) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        StringBuilder sb = new StringBuilder("modelfoundrystar_count_");
+        sb.append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.queryEventCount(queryConf, condition);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

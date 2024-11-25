@@ -3732,4 +3732,55 @@ public class QueryDao {
         }
         return resultInfo;
     }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
+    @SneakyThrows
+    public String queryEventCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getStarCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoId());
+        String index = queryConf.getEventIndex(condition.getRepoType());
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        JsonNode repoData = dataNode.get("aggregations").get("group_field").get("buckets");
+        ArrayNode buckets = objectMapper.createArrayNode();
+        for (JsonNode item : repoData) {
+            ObjectNode bucket = objectMapper.createObjectNode();
+            bucket.put("repo_id", item.get("key").asText());
+            JsonNode events = item.get("event").get("buckets");
+            bucket.put("count", getStarCount(events));
+            buckets.add(bucket);
+        }
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
+    }
+
+    /**
+     * Compute repo star count.
+     *
+     * @param event events of a repo
+     * @return like count.
+     */
+    @SneakyThrows
+    public int getStarCount(JsonNode events) {
+        int like = 0;
+        int dislike = 0;
+        for (JsonNode event : events) {
+            String eventType = event.path("key").asText().toLowerCase();
+            if ("like_create".equals(eventType)) {
+                like = event.get("doc_count").asInt();
+            } else if ("like_delete".equals(eventType)) {
+                dislike = event.get("doc_count").asInt();
+            }
+        }
+        return Math.max(like - dislike, 0);
+    }
 }

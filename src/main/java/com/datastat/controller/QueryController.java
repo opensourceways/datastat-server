@@ -779,4 +779,16 @@ public class QueryController {
             @RequestBody String requestBody) {
         return queryService.saveFrontendEvents(request, community, requestBody);
     }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
+    @RequestMapping(value = "/modelfoundry/star/count")
+    public String queryEventCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryEventCount(request, condition);
+    }
 }

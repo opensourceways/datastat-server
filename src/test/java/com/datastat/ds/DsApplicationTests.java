@@ -85,4 +85,19 @@ class DsApplicationTests {
 			CommonUtil.assertOk(res);
 		}
 	}
+
+	@Test
+	void testModelFoundryStar() throws Exception {
+		JsonNode cases = ReadCase.readFile("src/test/java/com/datastat/ds/case/TestCase.json");
+		JsonNode testCases = cases.get("modelfoundry_star_count");
+		for (JsonNode testCase : testCases) {
+			Map<String, String> caseMap = ObjectMapperUtil.jsonToMap(testCase);
+			MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
+			for (Map.Entry<String, String> entry : caseMap.entrySet()) {
+				paramMap.add(entry.getKey(), entry.getValue());
+			}
+			String res = CommonUtil.executeGet(mockMvc, "/query/modelfoundry/star/count", paramMap);
+			CommonUtil.assertOk(res);
+		}
+	}
 }
