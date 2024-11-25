@@ -3362,10 +3362,17 @@ public class QueryDao {
         return email;
     }
 
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
     @SneakyThrows
-    public String queryViewCount(CustomPropertiesConfig queryConf, String path) {
-        long currentTimeMillis = System.currentTimeMillis();
-        String query = String.format(queryConf.getViewCountQueryStr(), 0, currentTimeMillis, path);
+    public String queryViewCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getViewCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
         String index = queryConf.getExportWebsiteViewIndex();
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();

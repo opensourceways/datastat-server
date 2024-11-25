@@ -696,10 +696,16 @@ public class QueryController {
         return queryService.queryRepoDeveloper(request, timeRange);
     }
 
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
     @RequestMapping(value = "/modelfoundry/view/count")
-    public String queryViewCount(HttpServletRequest request,
-            @RequestParam(value = "path", required = false) String path) {
-        return queryService.queryViewCount(request, path);
+    public String queryViewCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryViewCount(request, condition);
     }
 
     @RequestMapping("/community/coreRepos")
