@@ -107,6 +107,9 @@ public class CustomPropertiesConfig {
     private String sigGatheringTemplate;
     private String softwareMaintainerIndex;
     private String giteeFeedbackIssueIndex;
+    private String spaceEventIndex;
+    private String modelEventIndex;
+    private String datasetEventIndex;
 
     // -- query str --
     private String extOsQueryStr;
@@ -212,6 +215,7 @@ public class CustomPropertiesConfig {
     private String sigGatheringUserCount;
     private String repoIssueField;
     private String userOwnerReposQuery;
+    private String starCountQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();
@@ -636,6 +640,24 @@ public class CustomPropertiesConfig {
             return getExportWebsiteViewIndex();
         } else {
             return null;
+        }
+    }
+
+    /**
+     * select which index to use.
+     *
+     * @param repoType the type of repo
+     * @return index name.
+     */
+    public String  getEventIndex(String repoType) {
+        if (repoType.equalsIgnoreCase("model")) {
+            return getModelEventIndex();
+        }  else if (repoType.equalsIgnoreCase("dataset")){
+            return getDatasetEventIndex();
+        } else if (repoType.equalsIgnoreCase("space")){
+            return getSpaceEventIndex();
+        } else {
+            throw new RuntimeException("Not support");
         }
     }
 }
