@@ -791,4 +791,17 @@ public class QueryController {
     public String queryEventCount(HttpServletRequest request, @Valid final RequestParams condition) {
         return queryService.queryEventCount(request, condition);
     }
+
+    /**
+     * Handles HTTP requests to the "/monthdowncount/openmind" endpoint to retrieve the monthly download count for a specified repository.
+     *
+     * @param request The HTTP request object containing details of the request.
+     * @param repoID  The unique identifier of the repository, passed as a request parameter.
+     * @return A string containing the monthly download count information for the repository.
+     */
+    @RequestMapping(value = "/monthdowncount/openmind")
+    public String monthDownCount(HttpServletRequest request,
+            @RequestParam(value = "repo_id") String repoID ) {
+        return queryService.getCommunityMonthDowncount(request, "foundry", repoID);
+    }
 }

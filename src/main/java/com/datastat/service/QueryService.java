@@ -1638,4 +1638,29 @@ public class QueryService {
         }
         return result;
     }
+
+    /**
+     * Retrieves the monthly download count statistics for a specified community and repository.
+     * This method first checks if the community exists, then queries the data either from a cache
+     * or the data source if not available in the cache.
+     *
+     * @param request  The HTTP request object containing details of the request.
+     * @param community The name of the community for which to retrieve the statistics.
+     * @param repoID    The unique identifier of the repository.
+     * @return A JSON string containing the monthly download count statistics.
+     */
+    public String getCommunityMonthDowncount(HttpServletRequest request, String community, String repoID) {
+        QueryDao queryDao = getQueryDao(request);
+        if (!checkCommunity(community)) {
+            return ResultUtil.resultJsonStr(404, "error", "community not found");
+        }
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_community_month_downcount_" + community + repoID;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getCommunityMonthDowncount(queryConf, community, repoID);
+          redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }

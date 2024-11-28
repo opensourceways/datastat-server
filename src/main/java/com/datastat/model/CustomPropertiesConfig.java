@@ -110,6 +110,7 @@ public class CustomPropertiesConfig {
     private String spaceEventIndex;
     private String modelEventIndex;
     private String datasetEventIndex;
+    private String openmindRepoIndex;
 
     // -- query str --
     private String extOsQueryStr;
@@ -216,6 +217,7 @@ public class CustomPropertiesConfig {
     private String repoIssueField;
     private String userOwnerReposQuery;
     private String starCountQueryStr;
+    private String openmindRepoQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();
