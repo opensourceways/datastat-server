@@ -26,7 +26,7 @@ public class RequestParams {
      */
     @Size(max = 20, message = "the length can not exceed 20")
     @Pattern(regexp = Constant.VALID_APPROVAL_REG, message = "Input repo type error")
-    private String repoType = "model";
+    private String repoType = "*";
 
     /**
      * This parameter is used to indicate which environment the data comes from.

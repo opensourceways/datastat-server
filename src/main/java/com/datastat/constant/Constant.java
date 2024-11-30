@@ -19,7 +19,7 @@ public final class Constant {
     /**
      * VALID_APPROVAL_REG used to match input string.
      */
-    public static final String VALID_APPROVAL_REG = "model|dataset|space";
+    public static final String VALID_APPROVAL_REG = "model|dataset|space|^\\*$";
 
     /**
      * VALID_DATE_REG used to match input string.
@@ -39,7 +39,7 @@ public final class Constant {
     /**
      * VALID_OPENMIND_ENV_REG used to match input string.
      */
-    public static final String VALID_OPENMIND_ENV_REG = "pro|yidong|sh";
+    public static final String VALID_OPENMIND_ENV_REG = "pro|tianyi|sh";
 
     /**
      * VALID_REPO_ID used to match input string.
