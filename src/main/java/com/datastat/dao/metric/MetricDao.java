@@ -47,10 +47,10 @@ public abstract class MetricDao {
     @Autowired
     EsAsyncHttpUtil esAsyncHttpUtil;
     
-    @Value("${company.query}")
+    @Value("${company.query:companyQuery}")
     String companyQueryStr;
 
-    @Value("${user.query}")
+    @Value("${user.query:userQuery}")
     String userQueryStr;
 
     protected static String esUrl;

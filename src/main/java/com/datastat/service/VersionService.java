@@ -63,7 +63,8 @@ public class VersionService {
 
     @PostConstruct
     public void init() {
-        esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
+        esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme", "https"),
+                env.getProperty("es.host", "0.0.0.0"), env.getProperty("es.port", "9200"));
     }
 
 

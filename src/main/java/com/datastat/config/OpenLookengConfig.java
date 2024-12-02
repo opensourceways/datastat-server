@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(prefix = "openlookeng")
-@PropertySource(value = {"file:${config.path}/openlookeng.properties"}, encoding = "UTF-8")
+@PropertySource(value = {"file:${config.path}/openlookeng.properties"}, ignoreResourceNotFound = true, encoding = "UTF-8")
 @Configuration("openlookengConf")
 @Data
 public class OpenLookengConfig extends CustomPropertiesConfig {

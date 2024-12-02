@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(prefix = "openeuler")
-@PropertySource(value = {"file:${config.path}/openeuler.properties"}, encoding = "UTF-8")
+@PropertySource(value = {"file:${config.path}/openeuler.properties"}, ignoreResourceNotFound = true, encoding = "UTF-8")
 @Configuration("openeulerConf")
 @Data
 public class OpenEulerConfig extends CustomPropertiesConfig {

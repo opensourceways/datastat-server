@@ -89,7 +89,7 @@ public class QueryService {
     @PostConstruct
     public void init() {
         redisDefaultExpire = Long.parseLong(env.getProperty("redis.keyExpire", "60"));
-        communityList = Arrays.asList(env.getProperty("communitys").split(","));
+        communityList = Arrays.asList(env.getProperty("communitys", "").split(","));
     }
 
     public Boolean checkCommunity(String community) {
