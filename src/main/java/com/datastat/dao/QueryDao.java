@@ -76,6 +76,7 @@ import org.springframework.stereotype.Repository;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -129,8 +130,8 @@ public class QueryDao {
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
         esQueryUtils = new EsQueryUtils();
-        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user")).split(","));
-        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids")).split(","));
+        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user", "robot")).split(","));
+        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids", "qa.domain.ids")).split(","));
     }
 
     @SneakyThrows
@@ -3782,5 +3783,84 @@ public class QueryDao {
             }
         }
         return Math.max(like - dislike, 0);
+    }
+
+    /**
+     * Retrieves the monthly download count statistics for a specified community and repository.
+     *
+     * @param queryConf Custom configuration properties containing necessary query configurations.
+     * @param community The name of the community for which to retrieve the statistics.
+     * @param repoID    The unique identifier of the repository.
+     * @return A JSON string containing the monthly download count statistics.
+     * @throws Exception If an error occurs during the query process.
+     */
+    @SneakyThrows
+    public String getCommunityMonthDowncount(CustomPropertiesConfig queryConf, String community, String repoID) {
+        String query = String.format(queryConf.getOpenmindRepoQueryStr(), repoID);
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeSearch(esUrl, queryConf.getOpenmindRepoIndex(), query);
+
+        Response response = future.get();
+
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+
+        var dataObject = objectMapper.createObjectNode();
+        var jsonArray = objectMapper.createArrayNode();
+
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        try {
+            JsonNode dataNode = objectMapper.readTree(responseBody);
+            JsonNode hits = dataNode.get("hits").get("hits").get(0);
+            JsonNode source = hits.get("_source");
+            JsonNode repoName = source.get("repo_name");
+            JsonNode repoType = source.get("repo_type");
+            JsonNode aggregations = dataNode.get("aggregations");
+            JsonNode dataPerDay = aggregations.get("data_per_day");
+            JsonNode buckets = dataPerDay.get("buckets");
+
+            for(JsonNode b : buckets) {
+                var jsonObject = objectMapper.createObjectNode();
+                jsonObject.set("date",b.get("key_as_string"));
+                jsonObject.set("count",b.get("doc_count"));
+                jsonArray.add(jsonObject);
+            }
+
+            int bLen = buckets.size();
+            int j = 0;
+            var resJsonArray = objectMapper.createArrayNode();
+
+            for(int i = 29; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                String formattedDate = date.format(df);
+
+                if(j < bLen && jsonArray.get(j).get("date").asText().equals(formattedDate)) {
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", jsonArray.get(j).get("count").asInt());
+                    resJsonArray.add(jsonObject);
+                    j++;
+                }else{
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", 0);
+                    resJsonArray.add(jsonObject);
+                }
+            }
+            
+            dataObject.put("repo_id", repoID);
+            dataObject.set("repo_name", repoName);
+            dataObject.set("repo_type", repoType);
+            dataObject.set("daily_down_count", resJsonArray);
+
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(dataObject), statusText);  
+
+          } catch (Exception e) {
+            logger.error("query/user/owner/repos get error", e.getMessage());
+
+            return ResultUtil.resultJsonStr(statusCode, dataObject, "No data found for the given repo_id");
+        }
     }
 }

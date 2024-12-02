@@ -19,7 +19,7 @@ public final class Constant {
     /**
      * VALID_APPROVAL_REG used to match input string.
      */
-    public static final String VALID_APPROVAL_REG = "model|dataset|space";
+    public static final String VALID_APPROVAL_REG = "model|dataset|space|^\\*$";
 
     /**
      * VALID_DATE_REG used to match input string.

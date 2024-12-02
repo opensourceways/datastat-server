@@ -33,10 +33,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EsAsyncHttpUtil {
-    @Value("${es.user}")
+    @Value("${es.user:user}")
     String esUser;
 
-    @Value("${es.password}")
+    @Value("${es.password:pwd}")
     String esPassword;
 
     static volatile AsyncHttpClient asyncHttpClient = null;
