@@ -130,8 +130,8 @@ public class QueryDao {
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
         esQueryUtils = new EsQueryUtils();
-        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user")).split(","));
-        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids")).split(","));
+        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user", "robot")).split(","));
+        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids", "qa.domain.ids")).split(","));
     }
 
     @SneakyThrows

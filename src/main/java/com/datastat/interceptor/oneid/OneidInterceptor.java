@@ -56,16 +56,16 @@ public class OneidInterceptor implements HandlerInterceptor {
     @Autowired
     RedisDao redisDao;
 
-    @Value("${cookie.token.name}")
+    @Value("${cookie.token.name:default}")
     private String cookieTokenName;
 
-    @Value("${cookie.token.domains}")
+    @Value("${cookie.token.domains:default}")
     private String allowDomains;
 
-    @Value("${cookie.token.secures}")
+    @Value("${cookie.token.secures:default}")
     private String cookieSecures;
 
-    @Value("${oneid.token.base.password}")
+    @Value("${oneid.token.base.password:default}")
     private String oneidTokenBasePassword;
 
     private static HashMap<String, Boolean> domain2secure;

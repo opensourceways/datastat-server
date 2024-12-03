@@ -38,7 +38,7 @@ public class RSAUtil implements Serializable {
     @Value("${rsa.key.algorithm:RSA}")
     public void setKeyAlgorithm(String keyAlgorithm) { RSAUtil.KEY_ALGORITHM = keyAlgorithm; }
 
-    @Value("${rsa.authing.algorithm}")
+    @Value("${rsa.authing.algorithm:RSA}")
     public void setRsaAlgorithm(String rsaAlgorithm) { RSAUtil.RSA_ALGORITHM = rsaAlgorithm; }
 
     /**
