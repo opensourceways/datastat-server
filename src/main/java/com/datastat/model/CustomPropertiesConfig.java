@@ -56,6 +56,8 @@ public class CustomPropertiesConfig {
     private String npsIssueFilter;
     private String globalNpsIssueFormat;
     private String globalNpsIssueTitle;
+    private String esBaseUrl;
+    private String esAuth;
 
     // -- index --
     private String extOsIndex;
