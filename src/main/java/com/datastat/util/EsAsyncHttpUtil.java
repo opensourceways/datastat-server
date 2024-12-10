@@ -127,4 +127,39 @@ public class EsAsyncHttpUtil {
 
         return client.executeRequest(builder.build());
     }
+
+    /**
+     * Get es builder based on auth.
+     *
+     * @param auth auth info.
+     * @return RequestBuilder.
+     */
+    public RequestBuilder getEsBuilder(String auth) {
+        RequestBuilder builder = new RequestBuilder();
+        builder.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        builder.addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString((auth).getBytes()))
+                .setMethod("POST");
+        return builder;
+
+    }
+
+    /**
+     * Execute search based on query.
+     *
+     * @param esUrl es url.
+     * @param auth auth info.
+     * @param index name of index.
+     * @param query string.
+     * @return ListenableFuture<Response>.
+     */
+    public ListenableFuture<Response> executeElasticSearch(String esUrl, String auth, String index,
+            String query) throws NoSuchAlgorithmException, KeyManagementException {
+        AsyncHttpClient client = getClient();
+        RequestBuilder builder = getEsBuilder(auth);
+
+        builder.setUrl(esUrl + index + "/_search");
+        builder.setBody(query);
+
+        return client.executeRequest(builder.build());
+    }
 }
