@@ -18,6 +18,7 @@ import com.datastat.model.BlueZoneUser;
 import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.model.IsvCount;
 import com.datastat.model.NpsBody;
+import com.datastat.model.OpenUbmcSearchNps;
 import com.datastat.model.QaBotRequestBody;
 import com.datastat.model.SigDetails;
 import com.datastat.model.SigDetailsMaintainer;
@@ -3704,6 +3705,44 @@ public class QueryDao {
             return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
         } catch (Exception e) {
             logger.error("Global nps issue exception - {}", e.getMessage());
+            return ResultUtil.resultJsonStr(400, null, "error");
+        }
+    }
+
+    public String putSearchOpeUbmcIssue(CustomPropertiesConfig queryConf, String token, String community, OpenUbmcSearchNps body) {
+        HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
+        });
+        resMap.put("community", community);
+        if (token == null) {
+               logger.info("Token is not allowed null");
+               throw new IllegalArgumentException("Token can not be null");
+        }
+        String userId = userIdDao.getUserIdByCommunity(token, community);
+        if(null == userId || userId.equals("")) {
+            logger.info("UserId is null");
+            throw new IllegalArgumentException("UserId is null");
+        }
+        resMap.put("userId", userId);
+        try {
+            Date now = new Date();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String nowStr = simpleDateFormat.format(now);
+            String uuid = UUID.randomUUID().toString();
+            resMap.put("created_at", nowStr);
+            BulkRequest request = new BulkRequest();
+            RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+            IndexRequest indexRequest = new IndexRequest(queryConf.getOpenubmcSearchNpsIndex());
+            String s = queryConf.getOpenubmcSearchNpsIndex();
+            indexRequest.id(uuid);
+            indexRequest.source(resMap, XContentType.JSON);
+            request.add(indexRequest);
+            if (request.requests().size() != 0) {
+                restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            }
+            restHighLevelClient.close();
+            return ResultUtil.resultJsonStr(200, objectMapper.valueToTree("success"), "success");
+        } catch (Exception e) {
+            logger.error("Search nps issue exception - {}", e.getMessage());
             return ResultUtil.resultJsonStr(400, null, "error");
         }
     }
