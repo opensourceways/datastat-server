@@ -40,6 +40,7 @@ import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 
 import jakarta.annotation.PostConstruct;
@@ -88,7 +89,7 @@ public class QueryService {
     @PostConstruct
     public void init() {
         redisDefaultExpire = Long.parseLong(env.getProperty("redis.keyExpire", "60"));
-        communityList = Arrays.asList(env.getProperty("communitys").split(","));
+        communityList = Arrays.asList(env.getProperty("communitys", "").split(","));
     }
 
     public Boolean checkCommunity(String community) {
@@ -1407,14 +1408,26 @@ public class QueryService {
         return result;
     }
 
-    public String queryModelFoundryCountPath(HttpServletRequest request, String path) {
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
+    public String queryModelFoundryCountPath(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        path = path == null ? "pro" : path;
-        String key = "modelfoundrycownload_repo_count_" + path;
+        StringBuilder sb = new StringBuilder("modelfoundrycownload_repo_count_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.queryModelFoundryCountPath(queryConf, path);
+            result = queryDao.queryModelFoundryCountPath(queryConf, condition);
             redisDao.set(key, result, 300l);
         }
         return result;
@@ -1432,14 +1445,26 @@ public class QueryService {
         return result;
     }
 
-    public String queryViewCount(HttpServletRequest request, String path) {
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest.
+     * @param condition search condition
+     * @return Response string.
+     */
+    public String queryViewCount(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        path = path == null ? "space" : path;
-        String key = "view_count_" + path;
+        StringBuilder sb = new StringBuilder("modelfoundryview_count_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.queryViewCount(queryConf, path);
+            result = queryDao.queryViewCount(queryConf, condition);
             redisDao.set(key, result, redisDefaultExpire);
         }
         return result;
@@ -1587,6 +1612,55 @@ public class QueryService {
         
         Map<String, Object> resMap = Map.of("code",200,"data", dataList,"msg", "success");
         result = objectMapper.valueToTree(resMap).toString();
+        return result;
+    }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest.
+     * @param condition search condition
+     * @return Response string.
+     */
+    public String queryEventCount(HttpServletRequest request, RequestParams condition) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        StringBuilder sb = new StringBuilder("modelfoundrystar_count_");
+        sb.append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.queryEventCount(queryConf, condition);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
+
+    /**
+     * Retrieves the monthly download count statistics for a specified community and repository.
+     * This method first checks if the community exists, then queries the data either from a cache
+     * or the data source if not available in the cache.
+     *
+     * @param request  The HTTP request object containing details of the request.
+     * @param community The name of the community for which to retrieve the statistics.
+     * @param repoID    The unique identifier of the repository.
+     * @return A JSON string containing the monthly download count statistics.
+     */
+    public String getCommunityMonthDowncount(HttpServletRequest request, String community, String repoID) {
+        QueryDao queryDao = getQueryDao(request);
+        if (!checkCommunity(community)) {
+            return ResultUtil.resultJsonStr(404, "error", "community not found");
+        }
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_community_month_downcount_" + community + repoID;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getCommunityMonthDowncount(queryConf, community, repoID);
+          redisDao.set(key, result, redisDefaultExpire);
+        }
         return result;
     }
 }

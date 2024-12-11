@@ -1,19 +1,72 @@
 {
     "nps": [
         {
-            "feedbackPageUrl": "https://software-website.osinfra.cn",    
+            "feedbackPageUrl": "https://software-website.osinfra.cn",
             "feedbackValue": 5,
             "feedbackText": "\"openeuler\""
         },
         {
-            "feedbackPageUrl": "https://software-website.osinfra.cn",    
+            "feedbackPageUrl": "https://software-website.osinfra.cn",
             "feedbackValue": 5,
             "feedbackText": "openeuler: 23.09"
         },
         {
-            "feedbackPageUrl": "https://software-website.osinfra.cn",    
+            "feedbackPageUrl": "https://software-website.osinfra.cn",
             "feedbackValue": 5,
             "feedbackText": null
+        }
+    ],
+    "modelfoundry_download_count": [
+        {
+            "start": "2024-11-01",
+            "end": "2024-11-21",
+            "repoType": "model",
+            "repoId": "13046"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "pro",
+            "repoType": "dataset"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "yidong"
+        },
+        {
+            "repoType": "space",
+            "path": "sh"
+        }
+    ],
+    "modelfoundry_view_count": [
+        {
+            "start": "2024-11-01",
+            "end": "2024-11-21",
+            "repoType": "model",
+            "repoId": "13046"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "pro",
+            "repoType": "dataset"
+        },
+        {
+            "start": "2024-11-01",
+            "path": "yidong"
+        },
+        {
+            "repoType": "space",
+            "path": "sh"
+        }
+    ],
+    "modelfoundry_star_count": [
+        {
+            "start": "2024-09-01",
+            "end": "2024-11-21",
+            "repoType": "model",
+            "repoId": "13046"
+        },
+        {
+            "repoType": "space"
         }
     ]
 }

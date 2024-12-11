@@ -26,6 +26,7 @@ import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.UserTagInfo;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 import com.datastat.model.vo.*;
 import com.datastat.model.yaml.*;
@@ -75,6 +76,7 @@ import org.springframework.stereotype.Repository;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -128,8 +130,8 @@ public class QueryDao {
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
         esQueryUtils = new EsQueryUtils();
-        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user")).split(","));
-        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids")).split(","));
+        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user", "robot")).split(","));
+        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids", "qa.domain.ids")).split(","));
     }
 
     @SneakyThrows
@@ -1199,16 +1201,35 @@ public class QueryDao {
         return objectMapper.valueToTree(resMap).toString();
     }
 
+    /**
+     * Search ownertype based on username.
+     *
+     * @param queryConf query config.
+     * @param userName user name.
+     * @return Response string.
+     */
     @SneakyThrows
     public String queryUserOwnerType(CustomPropertiesConfig queryConf, String userName) {
         String index = queryConf.getSigIndex();
         String queryStr = queryConf.getAllUserOwnerTypeQueryStr();
-
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, queryStr);
         String responseBody = future.get().getResponseBody(UTF_8);
+        HashMap<String, ArrayList<Object>> userData = parseOwnerInfo(responseBody, userName);
+        ArrayList<Object> ownerInfo = userData.get(userName.toLowerCase());
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(ownerInfo), "success");
+    }
+
+    /**
+     * parse owner info based on username.
+     *
+     * @param responseBody response string based on username.
+     * @param userName user name.
+     * @return Response string.
+     */
+    @SneakyThrows
+    public HashMap<String, ArrayList<Object>> parseOwnerInfo(String responseBody, String userName) {
         JsonNode dataNode = objectMapper.readTree(responseBody);
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
-
         HashMap<String, ArrayList<Object>> userData = new HashMap<>();
         while (buckets.hasNext()) {
             JsonNode bucket = buckets.next();
@@ -1217,7 +1238,8 @@ public class QueryDao {
             while (users.hasNext()) {
                 JsonNode userBucket = users.next();
                 String user = userBucket.get("key").asText();
-                if (!user.equalsIgnoreCase(userName)) continue;
+                if (!user.equalsIgnoreCase(userName))
+                    continue;
 
                 Iterator<JsonNode> types = userBucket.get("type").get("buckets").elements();
                 ArrayList<String> typeList = new ArrayList<>();
@@ -1238,13 +1260,7 @@ public class QueryDao {
                 }
             }
         }
-
-        HashMap<String, Object> resMap = new HashMap<>();
-        resMap.put("code", 200);
-        resMap.put("data", userData.get(userName.toLowerCase()));
-        resMap.put("msg", "success");
-        resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
-        return objectMapper.valueToTree(resMap).toString();
+        return userData;
     }
 
     @SneakyThrows
@@ -1645,7 +1661,6 @@ public class QueryDao {
 
     protected String getGiteeResNum(String access_token, String community) throws Exception {
         AsyncHttpClient client = EsAsyncHttpUtil.getClient();
-        RequestBuilder builder = esAsyncHttpUtil.getBuilder();
         Param access_tokenParam = new Param("access_token", access_token);
         Param visibility = new Param("visibility", "public");
         Param affiliation = new Param("affiliation", "admin");
@@ -1663,6 +1678,8 @@ public class QueryDao {
         params.add(q);
         params.add(page);
         params.add(per_page);
+
+        RequestBuilder builder = new RequestBuilder();
         Request request = builder.setUrl(env.getProperty("gitee.user.repos")).setQueryParams(params)
                 .addHeader("Content-Type", "application/json;charset=UTF-8").setMethod("GET").build();
         ListenableFuture<Response> responseListenableFuture = client.executeRequest(request);
@@ -3287,11 +3304,18 @@ public class QueryDao {
         return ResultUtil.resultJsonStr(statusCode, count, statusText);
     }
 
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
     @SneakyThrows
-    public String queryModelFoundryCountPath(CustomPropertiesConfig queryConf, String path) {
-        long currentTimeMillis = System.currentTimeMillis();
-        String query = String.format(queryConf.getModelFoundryDownloadCountQueryStr(), 0, currentTimeMillis);
-        String index = queryConf.getModelFoundryPathIndex(path);
+    public String queryModelFoundryCountPath(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getModelFoundryDownloadCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
+        String index = queryConf.getModelFoundryPathIndex(condition.getPath());
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();
         int statusCode = response.getStatusCode();
@@ -3354,10 +3378,17 @@ public class QueryDao {
         return email;
     }
 
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
     @SneakyThrows
-    public String queryViewCount(CustomPropertiesConfig queryConf, String path) {
-        long currentTimeMillis = System.currentTimeMillis();
-        String query = String.format(queryConf.getViewCountQueryStr(), 0, currentTimeMillis, path);
+    public String queryViewCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getViewCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
         String index = queryConf.getExportWebsiteViewIndex();
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();
@@ -3716,5 +3747,135 @@ public class QueryDao {
             resultInfo = ResultUtil.resultJsonStr(200, resultInfoList, "ok", Map.of("totalCount", resultInfoList.size()));
         }
         return resultInfo;
+    }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param queryConf query config.
+     * @param condition search condition
+     * @return Response string.
+     */
+    @SneakyThrows
+    public String queryEventCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getStarCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoId());
+        String index = queryConf.getEventIndex(condition.getRepoType());
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        JsonNode repoData = dataNode.get("aggregations").get("group_field").get("buckets");
+        ArrayNode buckets = objectMapper.createArrayNode();
+        for (JsonNode item : repoData) {
+            ObjectNode bucket = objectMapper.createObjectNode();
+            bucket.put("repo_id", item.get("key").asText());
+            JsonNode events = item.get("event").get("buckets");
+            bucket.put("count", getStarCount(events));
+            buckets.add(bucket);
+        }
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
+    }
+
+    /**
+     * Compute repo star count.
+     *
+     * @param event events of a repo
+     * @return like count.
+     */
+    @SneakyThrows
+    public int getStarCount(JsonNode events) {
+        int like = 0;
+        int dislike = 0;
+        for (JsonNode event : events) {
+            String eventType = event.path("key").asText().toLowerCase();
+            if ("like_create".equals(eventType)) {
+                like = event.get("doc_count").asInt();
+            } else if ("like_delete".equals(eventType)) {
+                dislike = event.get("doc_count").asInt();
+            }
+        }
+        return Math.max(like - dislike, 0);
+    }
+
+    /**
+     * Retrieves the monthly download count statistics for a specified community and repository.
+     *
+     * @param queryConf Custom configuration properties containing necessary query configurations.
+     * @param community The name of the community for which to retrieve the statistics.
+     * @param repoID    The unique identifier of the repository.
+     * @return A JSON string containing the monthly download count statistics.
+     * @throws Exception If an error occurs during the query process.
+     */
+    @SneakyThrows
+    public String getCommunityMonthDowncount(CustomPropertiesConfig queryConf, String community, String repoID) {
+        String query = String.format(queryConf.getOpenmindRepoQueryStr(), repoID);
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeSearch(esUrl, queryConf.getOpenmindRepoIndex(), query);
+
+        Response response = future.get();
+
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+
+        var dataObject = objectMapper.createObjectNode();
+        var jsonArray = objectMapper.createArrayNode();
+
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        try {
+            JsonNode dataNode = objectMapper.readTree(responseBody);
+            JsonNode hits = dataNode.get("hits").get("hits").get(0);
+            JsonNode source = hits.get("_source");
+            JsonNode repoName = source.get("repo_name");
+            JsonNode repoType = source.get("repo_type");
+            JsonNode aggregations = dataNode.get("aggregations");
+            JsonNode dataPerDay = aggregations.get("data_per_day");
+            JsonNode buckets = dataPerDay.get("buckets");
+
+            for(JsonNode b : buckets) {
+                var jsonObject = objectMapper.createObjectNode();
+                jsonObject.set("date",b.get("key_as_string"));
+                jsonObject.set("count",b.get("doc_count"));
+                jsonArray.add(jsonObject);
+            }
+
+            int bLen = buckets.size();
+            int j = 0;
+            var resJsonArray = objectMapper.createArrayNode();
+
+            for(int i = 29; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                String formattedDate = date.format(df);
+
+                if(j < bLen && jsonArray.get(j).get("date").asText().equals(formattedDate)) {
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", jsonArray.get(j).get("count").asInt());
+                    resJsonArray.add(jsonObject);
+                    j++;
+                }else{
+                    var jsonObject = objectMapper.createObjectNode();
+                    jsonObject.put("date", formattedDate);
+                    jsonObject.put("count", 0);
+                    resJsonArray.add(jsonObject);
+                }
+            }
+            
+            dataObject.put("repo_id", repoID);
+            dataObject.set("repo_name", repoName);
+            dataObject.set("repo_type", repoType);
+            dataObject.set("daily_down_count", resJsonArray);
+
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(dataObject), statusText);  
+
+          } catch (Exception e) {
+            logger.error("query/user/owner/repos get error", e.getMessage());
+
+            return ResultUtil.resultJsonStr(statusCode, dataObject, "No data found for the given repo_id");
+        }
     }
 }

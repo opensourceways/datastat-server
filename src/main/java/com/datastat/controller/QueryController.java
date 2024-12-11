@@ -26,6 +26,7 @@ import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
 import com.datastat.model.dto.NpsIssueBody;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.model.meetup.MeetupApplyForm;
 import com.datastat.model.vo.*;
 import com.datastat.service.QueryService;
@@ -676,10 +677,16 @@ public class QueryController {
         return queryService.queryModelFoundrySH(request, repo);
     }
 
+    /**
+     * Compute repo download based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
     @RequestMapping(value = "/modelfoundry/download/count")
-    public String queryModelFoundryCountPath(HttpServletRequest request,
-            @RequestParam(value = "path", required = false) String path) {
-        return queryService.queryModelFoundryCountPath(request, path);
+    public String queryModelFoundryCountPath(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryModelFoundryCountPath(request, condition);
     }
 
     @RequestMapping(value = "/repo/developer")
@@ -689,10 +696,16 @@ public class QueryController {
         return queryService.queryRepoDeveloper(request, timeRange);
     }
 
+    /**
+     * Compute repo view count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
     @RequestMapping(value = "/modelfoundry/view/count")
-    public String queryViewCount(HttpServletRequest request,
-            @RequestParam(value = "path", required = false) String path) {
-        return queryService.queryViewCount(request, path);
+    public String queryViewCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryViewCount(request, condition);
     }
 
     @RequestMapping("/community/coreRepos")
@@ -765,5 +778,30 @@ public class QueryController {
             @PathVariable(value = "community") String community,
             @RequestBody String requestBody) {
         return queryService.saveFrontendEvents(request, community, requestBody);
+    }
+
+    /**
+     * Compute repo star count based on the specified search conditions.
+     *
+     * @param request HttpServletRequest request.
+     * @param condition search condition.
+     * @return Response string.
+     */
+    @RequestMapping(value = "/modelfoundry/star/count")
+    public String queryEventCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.queryEventCount(request, condition);
+    }
+
+    /**
+     * Handles HTTP requests to the "/monthdowncount/openmind" endpoint to retrieve the monthly download count for a specified repository.
+     *
+     * @param request The HTTP request object containing details of the request.
+     * @param repoID  The unique identifier of the repository, passed as a request parameter.
+     * @return A string containing the monthly download count information for the repository.
+     */
+    @RequestMapping(value = "/monthdowncount/openmind")
+    public String monthDownCount(HttpServletRequest request,
+            @RequestParam(value = "repo_id") String repoID ) {
+        return queryService.getCommunityMonthDowncount(request, "foundry", repoID);
     }
 }
