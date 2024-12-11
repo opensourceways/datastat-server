@@ -41,4 +41,16 @@ public class UserIdDao {
         }
         return userId;
     }
+
+    public String getUserIdByCommunity(String token, String community) {
+        String userId = null;
+        try {
+            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(env.getProperty("rsa.authing." + community + ".privateKey"));
+            DecodedJWT decode = JWT.decode(RSAUtil.privateDecrypt(token, privateKey));
+            userId = decode.getAudience().get(0);
+        } catch (Exception e) {
+            logger.error("parse token exception - {}", e.getMessage());
+        }
+        return userId;
+    }
 }
