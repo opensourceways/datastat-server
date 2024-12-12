@@ -6,7 +6,7 @@
  IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
  PURPOSE.
  See the Mulan PSL v2 for more details.
- Create: 2023
+ Create: 2024
 */
 
 package com.datastat.model;
@@ -18,9 +18,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class OpenUbmcSearchNps {
+public class SearchIssueBody {
 
     private Boolean searchFlag;
+
+    private String keyword;
 
     @Size(max = 100,  message = "the length can not exceed 100")
     @Pattern(regexp = "^[^<>%&$]*$", message = "Text format error")

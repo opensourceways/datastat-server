@@ -21,7 +21,7 @@ import com.datastat.model.DatastatRequestBody;
 import com.datastat.model.HmsExportDataReq;
 import com.datastat.model.IsvCount;
 import com.datastat.model.NpsBody;
-import com.datastat.model.OpenUbmcSearchNps;
+import com.datastat.model.SearchIssueBody;
 import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
@@ -768,10 +768,10 @@ public class QueryController {
 
     @LimitRequest(callTime = 1, callCount = 1000)
     @RateLimit
-    @RequestMapping(value = "/search/openubmc/issue", method = RequestMethod.POST)
-    public String putSearchOpeUbmcIssue(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
-    @RequestParam(value = "community") String community, @Valid @RequestBody OpenUbmcSearchNps body) {
-        return queryService.putSearchOpeUbmcIssue(request, token, community,body);
+    @RequestMapping(value = "/search/issue", method = RequestMethod.POST)
+    public String putSearchIssueByCommunity(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
+    @RequestParam(value = "community") String community, @Valid @RequestBody SearchIssueBody body) {
+        return queryService.putSearchCommunityIssue(request, token, community,body);
     }
 
     @RequestMapping("/user/owner/repos")
