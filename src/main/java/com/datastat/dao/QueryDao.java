@@ -18,7 +18,7 @@ import com.datastat.model.BlueZoneUser;
 import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.model.IsvCount;
 import com.datastat.model.NpsBody;
-import com.datastat.model.OpenUbmcSearchNps;
+import com.datastat.model.SearchIssueBody;
 import com.datastat.model.QaBotRequestBody;
 import com.datastat.model.SigDetails;
 import com.datastat.model.SigDetailsMaintainer;
@@ -97,7 +97,6 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.security.SecureRandom;
-import java.security.interfaces.RSAPrivateKey;
 
 @Primary
 @Repository(value = "queryDao")
@@ -3709,7 +3708,7 @@ public class QueryDao {
         }
     }
 
-    public String putSearchOpeUbmcIssue(CustomPropertiesConfig queryConf, String token, String community, OpenUbmcSearchNps body) {
+    public String putSearchNpsByCommunity(CustomPropertiesConfig queryConf, String token, String community, SearchIssueBody body) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
         });
         resMap.put("community", community);
@@ -3731,8 +3730,7 @@ public class QueryDao {
             resMap.put("created_at", nowStr);
             BulkRequest request = new BulkRequest();
             RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
-            IndexRequest indexRequest = new IndexRequest(queryConf.getOpenubmcSearchNpsIndex());
-            String s = queryConf.getOpenubmcSearchNpsIndex();
+            IndexRequest indexRequest = new IndexRequest(queryConf.getSearchNpsIndex());
             indexRequest.id(uuid);
             indexRequest.source(resMap, XContentType.JSON);
             request.add(indexRequest);
