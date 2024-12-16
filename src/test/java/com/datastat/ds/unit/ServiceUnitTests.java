@@ -1,3 +1,14 @@
+/* This project is licensed under the Mulan PSL v2.
+ You can use this software according to the terms and conditions of the Mulan PSL v2.
+ You may obtain a copy of Mulan PSL v2 at:
+     http://license.coscl.org.cn/MulanPSL2
+ THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+ PURPOSE.
+ See the Mulan PSL v2 for more details.
+ Create: 2024
+*/
+
 package com.datastat.ds.unit;
 
 import static org.mockito.Mockito.mock;
@@ -112,6 +123,27 @@ public class ServiceUnitTests {
         when(queryDao.queryUserOwnerType(queryConfig, user)).thenReturn(result);
         when(redisDao.set(key, result, 1l)).thenReturn(true);
         String res = queryService.queryUserOwnerType(request, community, user);
+        CommonUtil.assertOk(res);
+    }
+
+    @Test()
+    void testViewCountService() throws Exception {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        String repoType = "dataset";
+        String owner = "owner";
+        String repo = "repo";
+        String key = "get_viewcount_" + repoType + owner + repo;
+        String result = "{\"code\":200,\"msg\":\"ok\",\"data\":{\"owner\":\"owner\",\"repo\":\"repo\",\"count\":30}}";
+        when(redisDao.get(key)).thenReturn(result);
+        String serviceRes = queryService.getViewCount(request, repoType, owner, repo);
+        CommonUtil.assertOk(serviceRes);
+
+        when(redisDao.get(key)).thenReturn(null);
+        when(queryDaoContext.getQueryDao("queryDao")).thenReturn(foundryDao);
+        when(queryConfContext.getQueryConfig("foundryConf")).thenReturn(queryConfig);
+        when(foundryDao.getViewCount(queryConfig, repoType, owner, repo)).thenReturn(result);
+        when(redisDao.set(key, result, 1l)).thenReturn(true);
+        String res = queryService.getViewCount(request, repoType, owner, repo);
         CommonUtil.assertOk(res);
     }
 }

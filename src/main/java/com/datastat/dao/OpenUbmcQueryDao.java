@@ -12,6 +12,7 @@ package com.datastat.dao;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Response;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Repository;
 
 import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.util.ResultUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.SneakyThrows;
 
@@ -47,5 +50,33 @@ public class OpenUbmcQueryDao extends QueryDao {
 
         ArrayList<Object> ownerInfo = userData.get(userName.toLowerCase());
         return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(ownerInfo), "success");
+    }
+
+    /**
+     * Search sig info based on sig name.
+     *
+     * @param queryConf query config.
+     * @param sig sig name.
+     * @return Response string.
+     */
+    @Override
+    @SneakyThrows
+    public String querySigInfo(CustomPropertiesConfig queryConf, String sig) {
+        sig = sig == null ? "*" : sig;
+        String queryJson = String.format(queryConf.getSigInfoQueryStr(), sig);
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeElasticSearch(queryConf.getEsBaseUrl(),
+                queryConf.getEsAuth(), queryConf.getSigIndex(), queryJson);
+        String responseBody = future.get().getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+
+        Iterator<JsonNode> buckets = dataNode.get("hits").get("hits").elements();
+        ArrayList<HashMap<String, Object>> sigList = new ArrayList<>();
+        while (buckets.hasNext()) {
+            JsonNode bucket = buckets.next().get("_source");
+            HashMap<String, Object> data = objectMapper.convertValue(bucket, new TypeReference<>() {
+            });
+            sigList.add(data);
+        }
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(sigList), "ok");
     }
 }

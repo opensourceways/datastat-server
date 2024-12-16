@@ -3878,4 +3878,31 @@ public class QueryDao {
             return ResultUtil.resultJsonStr(statusCode, dataObject, "No data found for the given repo_id");
         }
     }
+
+    /**
+     * Retrieves the view count statistics for a specified community and repository.
+     *
+     * @param queryConf Custom configuration properties containing necessary query configurations.
+     * @param repoType  The type of the repository, passed as a request parameter.
+     * @param owner  The owner of the repository, passed as a request parameter.
+     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @return A JSON string containing the monthly download count statistics.
+     * @throws Exception If an error occurs during the query process.
+     */
+    @SneakyThrows
+    public String getViewCount(CustomPropertiesConfig queryConf, String repoType, String owner, String repo) {
+        String query = String.format(queryConf.getRepoViewCountQueryStr(), repoType, owner, repo);
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeCount(esUrl, queryConf.getExportWebsiteViewIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        long count = dataNode.get("count").asLong();
+        Map<String, Object> resData = new HashMap<>();
+        resData.put("owner", owner);
+        resData.put("repo", repo);
+        resData.put("count", count);
+        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resData), statusText);  
+    }
 }
