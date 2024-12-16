@@ -431,6 +431,7 @@ public class QueryDao {
             .asString();
 
         if (response.getStatus() != 200) {
+            logger.error("user auth execption - {}", response.getBody());
             throw new Exception("unauthorized");
         }
         JsonNode res = objectMapper.readTree(response.getBody());
