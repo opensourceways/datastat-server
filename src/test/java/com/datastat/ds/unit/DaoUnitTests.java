@@ -1,3 +1,14 @@
+/* This project is licensed under the Mulan PSL v2.
+ You can use this software according to the terms and conditions of the Mulan PSL v2.
+ You may obtain a copy of Mulan PSL v2 at:
+     http://license.coscl.org.cn/MulanPSL2
+ THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+ PURPOSE.
+ See the Mulan PSL v2 for more details.
+ Create: 2024
+*/
+
 package com.datastat.ds.unit;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -99,6 +110,28 @@ public class DaoUnitTests {
         when(queryDaoContext.getQueryDao(community)).thenReturn(queryDao);
         when(queryConfContext.getQueryConfig(community)).thenReturn(queryConfig);
         res = queryDao.queryUserOwnerType(queryConfig, user);
+        CommonUtil.assertOk(res);
+    }
+
+
+    @Test()
+    void testViewCountDao() throws Exception {
+        String respBody = "{\"count\": 1234, \"_shards\":{\"total\":4,\"successful\":4}}";
+        when(esAsyncHttpUtil.executeCount(anyString(), isNull(), anyString())).thenReturn(mockFuture);
+        when(mockFuture.get()).thenReturn(mockResponse);
+        when(mockResponse.getStatusCode()).thenReturn(200);
+        when(mockResponse.getStatusText()).thenReturn("OK");
+        when(mockResponse.getResponseBody(StandardCharsets.UTF_8)).thenReturn(respBody);
+        String community = "foundry";
+        String repoType = "dataset";
+        String owner = "owner";
+        String repo = "repo";
+        when(queryDaoContext.getQueryDao(community)).thenReturn(queryDao);
+        when(queryConfContext.getQueryConfig(community)).thenReturn(queryConfig);
+        String query = "{\"query\":{\"bool\":{\"filter\":[{\"query_string\":{\"analyze_wildcard\":true,"
+                + "\"query\":\"event.keyword:$PageView AND properties.$path:\\\"/%ss/%s/%s\\\"\"}}]}}}";
+        when(queryConfig.getRepoViewCountQueryStr()).thenReturn(query);
+        String res = queryDao.getViewCount(queryConfig, repoType, owner, repo);
         CommonUtil.assertOk(res);
     }
 

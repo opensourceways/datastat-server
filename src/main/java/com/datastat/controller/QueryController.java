@@ -804,4 +804,21 @@ public class QueryController {
             @RequestParam(value = "repo_id") String repoID ) {
         return queryService.getCommunityMonthDowncount(request, "foundry", repoID);
     }
+
+    /**
+     * Handles HTTP requests to the "/view/count" endpoint to retrieve the view count for a specified repository.
+     *
+     * @param request The HTTP request object containing details of the request.
+     * @param repoType  The type of the repository, passed as a request parameter.
+     * @param owner  The owner of the repository, passed as a request parameter.
+     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @return A string containing the monthly download count information for the repository.
+     */
+    @RequestMapping(value = "/view/count")
+    public String viewCount(HttpServletRequest request,
+            @RequestParam(value = "repoType") String repoType,
+            @RequestParam(value = "owner") String owner,
+            @RequestParam(value = "repo") String repo) {
+        return queryService.getViewCount(request, repoType, owner, repo);
+    }
 }
