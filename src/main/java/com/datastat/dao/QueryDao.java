@@ -3708,20 +3708,10 @@ public class QueryDao {
         }
     }
 
-    public String putSearchNpsByCommunity(CustomPropertiesConfig queryConf, String token, String community, SearchIssueBody body) {
+    public String putSearchNpsByCommunity(CustomPropertiesConfig queryConf, String community, SearchIssueBody body) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
         });
         resMap.put("community", community);
-        if (token == null) {
-               logger.info("Token is not allowed null");
-               throw new IllegalArgumentException("Token can not be null");
-        }
-        String userId = userIdDao.getUserIdByCommunity(token, community);
-        if(null == userId || userId.equals("")) {
-            logger.info("UserId is null");
-            throw new IllegalArgumentException("UserId is null");
-        }
-        resMap.put("userId", userId);
         try {
             Date now = new Date();
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");

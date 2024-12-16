@@ -767,11 +767,10 @@ public class QueryController {
     }
 
     @LimitRequest(callTime = 1, callCount = 1000)
-    @RateLimit
     @RequestMapping(value = "/search/issue", method = RequestMethod.POST)
-    public String putSearchNpsByCommunity(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
+    public String putSearchNpsByCommunity(HttpServletRequest request,
     @RequestParam(value = "community") String community, @Valid @RequestBody SearchIssueBody body) {
-        return queryService.putSearchNpsByCommunity(request, token, community,body);
+        return queryService.putSearchNpsByCommunity(request, community,body);
     }
 
     @RequestMapping("/user/owner/repos")
