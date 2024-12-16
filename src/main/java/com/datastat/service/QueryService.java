@@ -1659,7 +1659,30 @@ public class QueryService {
         String result = (String) redisDao.get(key);
         if (result == null) {
             result = queryDao.getCommunityMonthDowncount(queryConf, community, repoID);
-          redisDao.set(key, result, redisDefaultExpire);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
+
+    /**
+     * Retrieves the view count statistics for a specified community and repository.
+     * This method first checks if the community exists, then queries the data either from a cache
+     * or the data source if not available in the cache.
+     *
+     * @param request  The HTTP request object containing details of the request.
+     * @param repoType  The type of the repository, passed as a request parameter.
+     * @param owner  The owner of the repository, passed as a request parameter.
+     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @return A JSON string containing the monthly download count statistics.
+     */
+    public String getViewCount(HttpServletRequest request, String repoType, String owner, String repo) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_viewcount_" + repoType + owner + repo;
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getViewCount(queryConf, repoType, owner, repo);
+            redisDao.set(key, result, redisDefaultExpire);
         }
         return result;
     }

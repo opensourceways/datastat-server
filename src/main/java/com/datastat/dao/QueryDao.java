@@ -356,41 +356,44 @@ public class QueryDao {
         return esQueryUtils.esFromId(restHighLevelClient, item, lastCursor, Integer.parseInt(pageSize), indexName);
     }
 
-    @SneakyThrows
     public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community) {
-        String user = getUserFromCookie(queryConf, oauth2_proxy);
-        String localFile = "om-data/obs/" + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
-        List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
         HashMap<String, Object> resMap = new HashMap<>();
-        resMap.put("code", 200);
-        resMap.put("msg", "OK");
-        if (report == null)
-            resMap.put("data", new ArrayList<>());
-        else if (user == null)
-            resMap.put("data", report);
-        else {
-            List<HashMap<String, Object>> user_login = report.stream()
-                    .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
-            resMap.put("data", user_login);
+        try {
+            String user = getUserFromCookie(queryConf, oauth2_proxy);
+            String localFile = env.getProperty("export_path") + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
+            List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
+            resMap.put("code", 200);
+            resMap.put("msg", "OK");
+            if (report == null)
+                resMap.put("data", new ArrayList<>());
+            else if (user == null)
+                resMap.put("data", report);
+            else {
+                List<HashMap<String, Object>> user_login = report.stream()
+                        .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
+                resMap.put("data", user_login);
+            }
+            BulkRequest request = new BulkRequest();
+            RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+            Date now = new Date();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String nowStr = simpleDateFormat.format(now);
+            String uuid = UUID.randomUUID().toString();
+            HashMap<String, Object> dataMap = new HashMap<>();
+            dataMap.put("user_login", user);
+            dataMap.put("community", community);
+            dataMap.put("created_at", nowStr);
+            request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
+            if (request.requests().size() != 0)
+                restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            restHighLevelClient.close();
+    
+            resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
+            return objectMapper.valueToTree(resMap).toString();
+        } catch (Exception e) {
+            logger.error("report exception - {}", e.getMessage());
+            return objectMapper.valueToTree(resMap).toString();
         }
-      
-        BulkRequest request = new BulkRequest();
-        RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
-        Date now = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-        String nowStr = simpleDateFormat.format(now);
-        String uuid = UUID.randomUUID().toString();
-        HashMap<String, Object> dataMap = new HashMap<>();
-        dataMap.put("user_login", user);
-        dataMap.put("community", community);
-        dataMap.put("created_at", nowStr);
-        request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
-        if (request.requests().size() != 0)
-            restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
-        restHighLevelClient.close();
-
-        resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
-        return objectMapper.valueToTree(resMap).toString();
     }
 
     @SneakyThrows
@@ -3877,5 +3880,32 @@ public class QueryDao {
 
             return ResultUtil.resultJsonStr(statusCode, dataObject, "No data found for the given repo_id");
         }
+    }
+
+    /**
+     * Retrieves the view count statistics for a specified community and repository.
+     *
+     * @param queryConf Custom configuration properties containing necessary query configurations.
+     * @param repoType  The type of the repository, passed as a request parameter.
+     * @param owner  The owner of the repository, passed as a request parameter.
+     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @return A JSON string containing the monthly download count statistics.
+     * @throws Exception If an error occurs during the query process.
+     */
+    @SneakyThrows
+    public String getViewCount(CustomPropertiesConfig queryConf, String repoType, String owner, String repo) {
+        String query = String.format(queryConf.getRepoViewCountQueryStr(), repoType, owner, repo);
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeCount(esUrl, queryConf.getExportWebsiteViewIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        long count = dataNode.get("count").asLong();
+        Map<String, Object> resData = new HashMap<>();
+        resData.put("owner", owner);
+        resData.put("repo", repo);
+        resData.put("count", count);
+        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resData), statusText);  
     }
 }
