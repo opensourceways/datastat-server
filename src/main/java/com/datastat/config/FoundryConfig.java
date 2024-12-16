@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(prefix = "foundry")
-@PropertySource(value = {"file:${config.path}/foundry.properties"}, encoding = "UTF-8")
+@PropertySource(value = {"file:${config.path}/foundry.properties"}, ignoreResourceNotFound = true, encoding = "UTF-8")
 @Configuration("foundryConf")
 @Data
 public class FoundryConfig extends CustomPropertiesConfig {

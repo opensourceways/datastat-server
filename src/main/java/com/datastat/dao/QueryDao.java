@@ -130,8 +130,8 @@ public class QueryDao {
     public void init() {
         esUrl = String.format("%s://%s:%s/", env.getProperty("es.scheme"), env.getProperty("es.host"), env.getProperty("es.port"));
         esQueryUtils = new EsQueryUtils();
-        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user")).split(","));
-        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids")).split(","));
+        robotUsers = Arrays.asList(Objects.requireNonNull(env.getProperty("skip.robot.user", "robot")).split(","));
+        domain_ids = Arrays.asList(Objects.requireNonNull(env.getProperty("qa.domain.ids", "qa.domain.ids")).split(","));
     }
 
     @SneakyThrows
@@ -1201,16 +1201,35 @@ public class QueryDao {
         return objectMapper.valueToTree(resMap).toString();
     }
 
+    /**
+     * Search ownertype based on username.
+     *
+     * @param queryConf query config.
+     * @param userName user name.
+     * @return Response string.
+     */
     @SneakyThrows
     public String queryUserOwnerType(CustomPropertiesConfig queryConf, String userName) {
         String index = queryConf.getSigIndex();
         String queryStr = queryConf.getAllUserOwnerTypeQueryStr();
-
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, queryStr);
         String responseBody = future.get().getResponseBody(UTF_8);
+        HashMap<String, ArrayList<Object>> userData = parseOwnerInfo(responseBody, userName);
+        ArrayList<Object> ownerInfo = userData.get(userName.toLowerCase());
+        return ResultUtil.resultJsonStr(200, objectMapper.valueToTree(ownerInfo), "success");
+    }
+
+    /**
+     * parse owner info based on username.
+     *
+     * @param responseBody response string based on username.
+     * @param userName user name.
+     * @return Response string.
+     */
+    @SneakyThrows
+    public HashMap<String, ArrayList<Object>> parseOwnerInfo(String responseBody, String userName) {
         JsonNode dataNode = objectMapper.readTree(responseBody);
         Iterator<JsonNode> buckets = dataNode.get("aggregations").get("group_field").get("buckets").elements();
-
         HashMap<String, ArrayList<Object>> userData = new HashMap<>();
         while (buckets.hasNext()) {
             JsonNode bucket = buckets.next();
@@ -1219,7 +1238,8 @@ public class QueryDao {
             while (users.hasNext()) {
                 JsonNode userBucket = users.next();
                 String user = userBucket.get("key").asText();
-                if (!user.equalsIgnoreCase(userName)) continue;
+                if (!user.equalsIgnoreCase(userName))
+                    continue;
 
                 Iterator<JsonNode> types = userBucket.get("type").get("buckets").elements();
                 ArrayList<String> typeList = new ArrayList<>();
@@ -1240,13 +1260,7 @@ public class QueryDao {
                 }
             }
         }
-
-        HashMap<String, Object> resMap = new HashMap<>();
-        resMap.put("code", 200);
-        resMap.put("data", userData.get(userName.toLowerCase()));
-        resMap.put("msg", "success");
-        resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
-        return objectMapper.valueToTree(resMap).toString();
+        return userData;
     }
 
     @SneakyThrows
@@ -1647,7 +1661,6 @@ public class QueryDao {
 
     protected String getGiteeResNum(String access_token, String community) throws Exception {
         AsyncHttpClient client = EsAsyncHttpUtil.getClient();
-        RequestBuilder builder = esAsyncHttpUtil.getBuilder();
         Param access_tokenParam = new Param("access_token", access_token);
         Param visibility = new Param("visibility", "public");
         Param affiliation = new Param("affiliation", "admin");
@@ -1665,6 +1678,8 @@ public class QueryDao {
         params.add(q);
         params.add(page);
         params.add(per_page);
+
+        RequestBuilder builder = new RequestBuilder();
         Request request = builder.setUrl(env.getProperty("gitee.user.repos")).setQueryParams(params)
                 .addHeader("Content-Type", "application/json;charset=UTF-8").setMethod("GET").build();
         ListenableFuture<Response> responseListenableFuture = client.executeRequest(request);

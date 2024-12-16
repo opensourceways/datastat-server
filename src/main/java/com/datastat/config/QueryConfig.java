@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(prefix = "custom")
-@PropertySource(value = {"file:${config.path}/custom.properties"})
+@PropertySource(value = {"file:${config.path}/custom.properties"}, ignoreResourceNotFound = true, encoding = "UTF-8")
 @Configuration("queryConf")
 @Data
 public class QueryConfig extends CustomPropertiesConfig {
