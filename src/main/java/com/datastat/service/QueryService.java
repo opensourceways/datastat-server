@@ -326,7 +326,7 @@ public class QueryService {
         String referer = request.getHeader("Referer");
         String community = null;
         try {
-            community = referer.split("\\.")[1];
+            community = referer.split("-")[1].split("\\.")[0];
         } catch (Exception e) {
             logger.error("exception", e);
             return resultJsonStr(404, "error", "Referer error");

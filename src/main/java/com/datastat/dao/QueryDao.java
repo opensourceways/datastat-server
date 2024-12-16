@@ -356,41 +356,44 @@ public class QueryDao {
         return esQueryUtils.esFromId(restHighLevelClient, item, lastCursor, Integer.parseInt(pageSize), indexName);
     }
 
-    @SneakyThrows
     public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community) {
-        String user = getUserFromCookie(queryConf, oauth2_proxy);
-        String localFile = "om-data/obs/" + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
-        List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
         HashMap<String, Object> resMap = new HashMap<>();
-        resMap.put("code", 200);
-        resMap.put("msg", "OK");
-        if (report == null)
-            resMap.put("data", new ArrayList<>());
-        else if (user == null)
-            resMap.put("data", report);
-        else {
-            List<HashMap<String, Object>> user_login = report.stream()
-                    .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
-            resMap.put("data", user_login);
+        try {
+            String user = getUserFromCookie(queryConf, oauth2_proxy);
+            String localFile = env.getProperty("export_path") + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
+            List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
+            resMap.put("code", 200);
+            resMap.put("msg", "OK");
+            if (report == null)
+                resMap.put("data", new ArrayList<>());
+            else if (user == null)
+                resMap.put("data", report);
+            else {
+                List<HashMap<String, Object>> user_login = report.stream()
+                        .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
+                resMap.put("data", user_login);
+            }
+            BulkRequest request = new BulkRequest();
+            RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
+            Date now = new Date();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String nowStr = simpleDateFormat.format(now);
+            String uuid = UUID.randomUUID().toString();
+            HashMap<String, Object> dataMap = new HashMap<>();
+            dataMap.put("user_login", user);
+            dataMap.put("community", community);
+            dataMap.put("created_at", nowStr);
+            request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
+            if (request.requests().size() != 0)
+                restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
+            restHighLevelClient.close();
+    
+            resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
+            return objectMapper.valueToTree(resMap).toString();
+        } catch (Exception e) {
+            logger.error("report exception - {}", e.getMessage());
+            return objectMapper.valueToTree(resMap).toString();
         }
-      
-        BulkRequest request = new BulkRequest();
-        RestHighLevelClient restHighLevelClient = getRestHighLevelClient();
-        Date now = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-        String nowStr = simpleDateFormat.format(now);
-        String uuid = UUID.randomUUID().toString();
-        HashMap<String, Object> dataMap = new HashMap<>();
-        dataMap.put("user_login", user);
-        dataMap.put("community", community);
-        dataMap.put("created_at", nowStr);
-        request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
-        if (request.requests().size() != 0)
-            restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
-        restHighLevelClient.close();
-
-        resMap.put("update_at", (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")).format(new Date()));
-        return objectMapper.valueToTree(resMap).toString();
     }
 
     @SneakyThrows
@@ -428,6 +431,7 @@ public class QueryDao {
             .asString();
 
         if (response.getStatus() != 200) {
+            logger.error("user auth execption - {}", response.getBody());
             throw new Exception("unauthorized");
         }
         JsonNode res = objectMapper.readTree(response.getBody());
