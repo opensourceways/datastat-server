@@ -113,6 +113,7 @@ public class CustomPropertiesConfig {
     private String modelEventIndex;
     private String datasetEventIndex;
     private String openmindRepoIndex;
+    private String searchNpsIndex;
 
     // -- query str --
     private String extOsQueryStr;

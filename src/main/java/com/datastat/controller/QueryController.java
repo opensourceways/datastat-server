@@ -21,7 +21,7 @@ import com.datastat.model.DatastatRequestBody;
 import com.datastat.model.HmsExportDataReq;
 import com.datastat.model.IsvCount;
 import com.datastat.model.NpsBody;
-import com.datastat.model.QaBotRequestBody;
+import com.datastat.model.SearchIssueBody;
 import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
 import com.datastat.model.dto.ContributeRequestParams;
@@ -764,6 +764,21 @@ public class QueryController {
     public String putGlobalNpsIssue(HttpServletRequest request, @CookieValue(value = "_Y_G_") String token, 
     @RequestParam(value = "community") String community, @Valid @RequestBody NpsBody body) {
         return queryService.putGlobalNpsIssue(request, token, community, body);
+    }
+
+    /**
+     * submit search issue based on the searchIssue body.
+     *
+     * @param request HttpServletRequest request.
+     * @param token ueser token.
+     * @param body issue body.
+     * @return Response string.
+     */
+    @LimitRequest(callTime = 1, callCount = 1000)
+    @RequestMapping(value = "/search/issue", method = RequestMethod.POST)
+    public String putSearchNpsByCommunity(HttpServletRequest request, @CookieValue(value = "_Y_G_", required = false) String token,
+    @RequestParam(value = "community") String community, @Valid @RequestBody SearchIssueBody body) {
+        return queryService.putSearchNpsByCommunity(request, token, community,body);
     }
 
     @RequestMapping("/user/owner/repos")

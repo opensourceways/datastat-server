@@ -35,6 +35,7 @@ import com.datastat.model.DatastatRequestBody;
 import com.datastat.model.HmsExportDataReq;
 import com.datastat.model.IsvCount;
 import com.datastat.model.NpsBody;
+import com.datastat.model.SearchIssueBody;
 import com.datastat.model.QaBotRequestBody;
 import com.datastat.model.SigGathering;
 import com.datastat.model.TeamupApplyForm;
@@ -1574,6 +1575,13 @@ public class QueryService {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf(request);
         return queryDao.putGlobalNpsIssue(queryConf, token, community, body);
+    }
+
+    public String putSearchNpsByCommunity(HttpServletRequest request, String token, String community, SearchIssueBody body) {
+        if (!checkCommunity(community))  return ResultUtil.resultJsonStr(404, "error", "not found");
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf(request);
+        return queryDao.putSearchNpsByCommunity(queryConf, token, community, body);
     }
 
     public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
