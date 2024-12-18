@@ -3708,10 +3708,21 @@ public class QueryDao {
         }
     }
 
-    public String putSearchNpsByCommunity(CustomPropertiesConfig queryConf, String community, SearchIssueBody body) {
+    public String putSearchNpsByCommunity(CustomPropertiesConfig queryConf, String token, String community, SearchIssueBody body) {
         HashMap<String, Object> resMap = objectMapper.convertValue(body, new TypeReference<HashMap<String, Object>>() {
         });
         resMap.put("community", community);
+        String userId = "";
+        if (token != null && !"mindspore".equals(community)) {
+            userId = userIdDao.getUserIdByCommunity(token, community);
+            if (null == userId || userId.equals("")) {
+                logger.warn("UserId parse error for token:" + token + ",community:" + community);
+                throw new IllegalArgumentException("UserId parse error");
+            }
+        } else {
+            userId = "anonymous";
+        }
+        resMap.put("userId", userId);
         try {
             Date now = new Date();
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");

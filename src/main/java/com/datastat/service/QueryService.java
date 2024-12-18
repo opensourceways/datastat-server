@@ -1577,11 +1577,11 @@ public class QueryService {
         return queryDao.putGlobalNpsIssue(queryConf, token, community, body);
     }
 
-    public String putSearchNpsByCommunity(HttpServletRequest request, String community, SearchIssueBody body) {
+    public String putSearchNpsByCommunity(HttpServletRequest request, String token, String community, SearchIssueBody body) {
         if (!checkCommunity(community))  return ResultUtil.resultJsonStr(404, "error", "not found");
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf(request);
-        return queryDao.putSearchNpsByCommunity(queryConf, community, body);
+        return queryDao.putSearchNpsByCommunity(queryConf, token, community, body);
     }
 
     public String queryGolbalIssues(HttpServletRequest request,String token, ContributeRequestParams params) throws Exception {
