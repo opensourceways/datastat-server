@@ -392,7 +392,7 @@ public class QueryDao {
             return objectMapper.valueToTree(resMap).toString();
         } catch (Exception e) {
             logger.error("report exception - {}", e.getMessage());
-            return objectMapper.valueToTree(resMap).toString();
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -431,6 +431,7 @@ public class QueryDao {
             .asString();
 
         if (response.getStatus() != 200) {
+            logger.error("user auth execption - {}", response.getBody());
             throw new Exception("unauthorized");
         }
         JsonNode res = objectMapper.readTree(response.getBody());
@@ -1470,7 +1471,7 @@ public class QueryDao {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
         return null;
     }
@@ -3717,7 +3718,7 @@ public class QueryDao {
         resMap.put("community", community);
         String userId = "";
         if (token != null && !"mindspore".equals(community)) {
-            userId = userIdDao.getUserIdByCommunity(token, community);
+            userId = userIdDao.getUserIdByCommunity(token, queryConf);
             if (null == userId || userId.equals("")) {
                 logger.warn("UserId parse error for token:" + token + ",community:" + community);
                 throw new IllegalArgumentException("UserId parse error");

@@ -26,6 +26,8 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +36,8 @@ import org.springframework.stereotype.Component;
 public class RSAUtil implements Serializable {
     public static String KEY_ALGORITHM;
     public static String RSA_ALGORITHM;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RSAUtil.class);
 
     @Value("${rsa.key.algorithm:RSA}")
     public void setKeyAlgorithm(String keyAlgorithm) { RSAUtil.KEY_ALGORITHM = keyAlgorithm; }
@@ -175,6 +179,36 @@ public class RSAUtil implements Serializable {
         byte[] dataResult = out.toByteArray();
         IOUtils.closeQuietly(out);
         return dataResult;
+    }
+
+    /**
+     * sha256加密.
+     *
+     * @param data 数据
+     * @param salt 盐
+     * @return 加密后数据
+     * @throws NoSuchAlgorithmException 异常
+     */
+    public static String encryptSha256(String data, String salt) {
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.error("encryptSha256 failed {}", e.getMessage());
+            return null;
+        }
+        // 将盐值和数据拼接后进行哈希计算
+        String combinedData = data + salt;
+        byte[] hashBytes = md.digest(combinedData.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            String hex = String.format("%02X", b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     public static void main(String[] args) throws Exception {

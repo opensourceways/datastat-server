@@ -58,6 +58,10 @@ public class CustomPropertiesConfig {
     private String globalNpsIssueTitle;
     private String esBaseUrl;
     private String esAuth;
+    private String authTokenBasePassword;
+    private String rsaAuthPrivateKey;
+    private String authTokenSessionPassword;
+    private String authSalt;
 
     // -- index --
     private String extOsIndex;

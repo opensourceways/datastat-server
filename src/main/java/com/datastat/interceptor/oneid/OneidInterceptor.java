@@ -13,6 +13,7 @@ package com.datastat.interceptor.oneid;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 
@@ -28,14 +29,11 @@ import com.datastat.util.HttpClientUtils;
 import com.datastat.util.ObjectMapperUtil;
 import com.datastat.util.RSAUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,9 +62,6 @@ public class OneidInterceptor implements HandlerInterceptor {
 
     @Value("${cookie.token.secures:default}")
     private String cookieSecures;
-
-    @Value("${oneid.token.base.password:default}")
-    private String oneidTokenBasePassword;
 
     private static HashMap<String, Boolean> domain2secure;
     private static final Logger logger = LoggerFactory.getLogger(OneidInterceptor.class);
@@ -100,11 +95,12 @@ public class OneidInterceptor implements HandlerInterceptor {
                 && (companyToken == null || !companyToken.required())) {
             return true;
         }
+        CustomPropertiesConfig queryConf = getQueryConf(httpServletRequest);
 
         // 从请求头中取出 token
         String headerToken = httpServletRequest.getHeader("token");
-        String headJwtTokenMd5 = verifyHeaderToken(headerToken);
-        if (StringUtils.isBlank(headJwtTokenMd5)) {
+        String verifyHeaderMsg = verifyHeaderToken(headerToken, queryConf);
+        if (!verifyHeaderMsg.equals("success")) {
             tokenError(httpServletRequest, httpServletResponse, "unauthorized");
             return false;
         }
@@ -126,9 +122,11 @@ public class OneidInterceptor implements HandlerInterceptor {
         // 解密cookie中加密的token
         String token = tokenCookie.getValue();
         try {
-            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(env.getProperty("rsa.authing.privateKey"));
+            String authPrivateKey = queryConf.getRsaAuthPrivateKey();
+            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(authPrivateKey);
             token = RSAUtil.privateDecrypt(token, privateKey);
         } catch (Exception e) {
+            logger.error("decode token in cookie exception - {}", e.getMessage());
             tokenError(httpServletRequest, httpServletResponse, "unauthorized");
             return false;
         }
@@ -148,12 +146,14 @@ public class OneidInterceptor implements HandlerInterceptor {
             permission = new String(Base64.getDecoder().decode(permissionTemp.getBytes()));
             verifyToken = decode.getClaim("verifyToken").asString();
         } catch (JWTDecodeException j) {
+            logger.error("parse token exception - {}", j.getMessage());
             tokenError(httpServletRequest, httpServletResponse, "unauthorized");
             return false;
         }
 
         // 校验token
-        String verifyTokenMsg = verifyToken(headJwtTokenMd5, token, verifyToken, userId, issuedAt, expiresAt, permission);
+        String verifyTokenMsg = verifyCookieToken(headerToken, token, verifyToken, userId, issuedAt, expiresAt,
+                permission, queryConf);
         if (!verifyTokenMsg.equals("success")) {
             tokenError(httpServletRequest, httpServletResponse, verifyTokenMsg);
             return false;
@@ -193,11 +193,15 @@ public class OneidInterceptor implements HandlerInterceptor {
                                 Object o, Exception e) throws Exception {
     }
 
-    private String verifyToken(String headerToken, String token, String verifyToken,
-                               String userId, Date issuedAt, Date expiresAt, String permission) {
+    private String verifyCookieToken(String headerToken, String token, String verifyToken,
+            String userId, Date issuedAt, Date expiresAt, String permission, CustomPropertiesConfig queryConf) {
         try {
+            // 服务端校验headerToken是否有效
+            String shaToken = RSAUtil.encryptSha256(headerToken, queryConf.getAuthSalt());
+            String md5Token = DigestUtils.md5DigestAsHex(headerToken.getBytes(StandardCharsets.UTF_8));
+
             // header中的token和cookie中的token不一样
-            if (!headerToken.equals(verifyToken)) {
+            if (!shaToken.equals(verifyToken) && !md5Token.equals(verifyToken)) {
                 return "unauthorized";
             }
 
@@ -207,17 +211,12 @@ public class OneidInterceptor implements HandlerInterceptor {
             }
 
             // token 签名密码验证
-            String password = permission + oneidTokenBasePassword;
+            String password = permission + queryConf.getAuthTokenSessionPassword();
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(password)).build();
             jwtVerifier.verify(token);
 
-            // 退出登录后token失效
-            // String redisKey = userId + issuedAt.toString();
-            // String beforeToken = (String) redisDao.get(redisKey);
-            // if (token.equalsIgnoreCase(beforeToken)) {
-            //     return "unauthorized";
-            // }
         } catch (Exception e) {
+            logger.error("verify token exception - {}", e.getMessage());
             return "unauthorized";
         }
         return "success";
@@ -227,27 +226,21 @@ public class OneidInterceptor implements HandlerInterceptor {
      * 校验header中的token
      *
      * @param headerToken header中的token
-     * @return 校验正确返回token的MD5值
+     * @return 返回校验信息
      */
-    private String verifyHeaderToken(String headerToken) {
+    private String verifyHeaderToken(String headerToken, CustomPropertiesConfig queryConf) {
         try {
             if (StringUtils.isBlank(headerToken)) {
                 return "unauthorized";
             }
 
-            // 服务端校验headerToken是否有效
-            String md5Token = DigestUtils.md5DigestAsHex(headerToken.getBytes());
-            // if (!redisDao.exists("idToken_" + md5Token)) {
-            //     return "token expires";
-            // }
-
             // token 签名密码验证
-            String password = oneidTokenBasePassword;
+            String password = queryConf.getAuthTokenBasePassword();
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(password)).build();
             jwtVerifier.verify(headerToken);
-            return md5Token;
+            return "success";
         } catch (Exception e) {
-            logger.error("exception", e);
+            logger.error("verify Header Token exception - {}", e.getMessage());
             return "unauthorized";
         }
     }
@@ -267,7 +260,7 @@ public class OneidInterceptor implements HandlerInterceptor {
                 }
             }
         } catch (Exception e) {
-            logger.error("exception", e);
+            logger.error("verify user permission exception - {}", e.getMessage());
             return "has no permission";
         }
         return "has no permission";
@@ -285,6 +278,7 @@ public class OneidInterceptor implements HandlerInterceptor {
                 }
             }
         } catch (Exception e) {
+            logger.error("verify user company permission exception - {}", e.getMessage());
             return "has no permission";
         }
         return "has no permission";
@@ -341,6 +335,7 @@ public class OneidInterceptor implements HandlerInterceptor {
             JsonNode resJson = ObjectMapperUtil.toJsonNode(response);
             return resJson.get("token").asText();
         } catch (Exception e) {
+            logger.error("get manage token exception - {}", e.getMessage());
         }
         return null;
     }
