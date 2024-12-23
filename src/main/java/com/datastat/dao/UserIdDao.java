@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.util.RSAUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,14 +43,15 @@ public class UserIdDao {
         return userId;
     }
 
-    public String getUserIdByCommunity(String token, String community) {
+    public String getUserIdByCommunity(String token, CustomPropertiesConfig queryConf) {
         String userId = null;
         try {
-            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(env.getProperty("rsa.authing." + community + ".privateKey"));
+            String authPrivateKey = queryConf.getRsaAuthPrivateKey();
+            RSAPrivateKey privateKey = RSAUtil.getPrivateKey(authPrivateKey);
             DecodedJWT decode = JWT.decode(RSAUtil.privateDecrypt(token, privateKey));
             userId = decode.getAudience().get(0);
         } catch (Exception e) {
-            logger.error("parse token exception - {}", e.getMessage());
+            logger.error("parse user id from token exception - {}", e.getMessage());
         }
         return userId;
     }

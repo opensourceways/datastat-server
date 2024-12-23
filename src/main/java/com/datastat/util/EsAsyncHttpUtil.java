@@ -20,9 +20,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import javax.net.ssl.*;
 
 import org.asynchttpclient.*;
@@ -44,8 +43,9 @@ public class EsAsyncHttpUtil {
     public static synchronized AsyncHttpClient getClient() throws KeyManagementException, NoSuchAlgorithmException {
         if (asyncHttpClient == null) {
             asyncHttpClient = new DefaultAsyncHttpClient(new DefaultAsyncHttpClientConfig.Builder()
-                    .setConnectTimeout(100000)
-                    .setRequestTimeout(100000).setSslContext(new JdkSslContext(skipSsl(), true, ClientAuth.NONE))
+                    .setConnectTimeout(Duration.ofSeconds(300))
+                    .setReadTimeout(Duration.ofSeconds(300))
+                    .setRequestTimeout(Duration.ofSeconds(300)).setSslContext(new JdkSslContext(skipSsl(), true, ClientAuth.NONE))
                     .build());
         }
 
