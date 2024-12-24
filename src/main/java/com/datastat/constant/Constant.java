@@ -52,6 +52,16 @@ public final class Constant {
     public static final String OPENMIND_COMMUNITY = "openmind";
 
     /**
+     * The name of github platform.
+     */
+    public static final String GITHUB_PLATFORM = "github";
+
+    /**
+     * The name of gutee platform.
+     */
+    public static final String GITEE_PLATFORM = "GITEE";
+
+    /**
      * 支持性能数据上传的社区.
      */
     public static final List<String> PERF_DATA_COMMUNITY = Collections.unmodifiableList(new ArrayList<>() {

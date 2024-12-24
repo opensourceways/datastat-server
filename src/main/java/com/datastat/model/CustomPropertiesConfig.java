@@ -45,6 +45,7 @@ public class CustomPropertiesConfig {
     private String sigAction;
     private String isvYamlUrl;
     private String giteeUserInfoUrl;
+    private String githubUserInfoUrl;
     private String orgName;
     private String isvCountToken;
     private String checkField;

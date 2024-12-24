@@ -356,18 +356,18 @@ public class QueryDao {
         return esQueryUtils.esFromId(restHighLevelClient, item, lastCursor, Integer.parseInt(pageSize), indexName);
     }
 
-    public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community) {
+    public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community,
+            String platform) {
         HashMap<String, Object> resMap = new HashMap<>();
         try {
-            String user = getUserFromCookie(queryConf, oauth2_proxy);
-            String localFile = env.getProperty("export_path") + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
+            String localFile = String.format("%s%s_%s_%s.csv", env.getProperty("export_path"), community.toLowerCase(),
+                    platform, env.getProperty("year"));
+            String user = getUserFromCookie(queryConf, oauth2_proxy, platform);
             List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
             resMap.put("code", 200);
             resMap.put("msg", "OK");
-            if (report == null)
+            if (report == null || user == null)
                 resMap.put("data", new ArrayList<>());
-            else if (user == null)
-                resMap.put("data", report);
             else {
                 List<HashMap<String, Object>> user_login = report.stream()
                         .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
@@ -398,7 +398,7 @@ public class QueryDao {
 
     @SneakyThrows
     public String queryNewYearMonthCount(CustomPropertiesConfig queryConf, String oauth2_proxy) {
-        String user = getUserFromCookie(queryConf, oauth2_proxy);
+        String user = getUserFromCookie(queryConf, oauth2_proxy, "gitee");
         String queryJson = String.format(queryConf.getMonthCountQueryStr(), user);
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), queryJson);
         String responseBody = future.get().getResponseBody(UTF_8);
@@ -424,9 +424,17 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    private String getUserFromCookie(CustomPropertiesConfig queryConf, String oauth2_proxy) {
+    private String getUserFromCookie(CustomPropertiesConfig queryConf, String oauth2_proxy, String platform) {
         String cookie_oauth2_proxy = "_oauth2_proxy=" + oauth2_proxy;
-        HttpResponse<String> response = Unirest.get(queryConf.getGiteeUserInfoUrl())
+        String userInfoUrl;
+        if (Constant.GITEE_PLATFORM.equalsIgnoreCase(platform)) {
+            userInfoUrl = queryConf.getGiteeUserInfoUrl();
+        } else if (Constant.GITHUB_PLATFORM.equalsIgnoreCase(platform)) {
+            userInfoUrl = queryConf.getGithubUserInfoUrl();
+        } else {
+            throw new RuntimeException("error platform");
+        }
+        HttpResponse<String> response = Unirest.get(userInfoUrl)
             .header("cookie", cookie_oauth2_proxy)
             .asString();
 
@@ -3603,7 +3611,7 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    public String saveFrontendEvents(String community, String requestBody) {
+    public String saveFrontendEvents(String community, String requestBody, String clientIp) {
       // 检测请求体是否含有header和body
       boolean hasHeader = requestBody.contains("\"header\"");
       boolean hasBody = requestBody.contains("\"body\"");
@@ -3651,6 +3659,7 @@ public class QueryDao {
 
           eventObj.put("created_at", nowStr);
           eventObj.put("community", community);
+          eventObj.put("clientIp", clientIp);
 
           JsonNode mergedJson = objectMapper.updateValue(eventObj, headerObj);
 

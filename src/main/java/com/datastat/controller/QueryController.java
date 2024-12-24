@@ -152,7 +152,13 @@ public class QueryController {
     @RequestMapping("/newYear/report")
     public String queryNewYear(HttpServletRequest request,
                                @CookieValue(value = "_oauth2_proxy", required = true) String oauth2_proxy) {
-        return queryService.queryNewYearPer(request, oauth2_proxy);
+        return queryService.queryNewYearPer(request, oauth2_proxy, "gitee");
+    }
+
+    @RequestMapping("/newYear/report/github")
+    public String queryNewYearGithub(HttpServletRequest request,
+                               @CookieValue(value = "_oauth2_proxy", required = true) String oauth2_proxy) {
+        return queryService.queryNewYearPer(request, oauth2_proxy, "github");
     }
 
     @RequestMapping("/newYear/monthcount")

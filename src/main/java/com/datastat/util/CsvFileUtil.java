@@ -59,7 +59,7 @@ public class CsvFileUtil {
             return res;
 
         } catch (Exception e) {
-            logger.error("exception", e);
+            logger.error("read file exception - {}", e.getMessage());
             return null;
         }
     }
