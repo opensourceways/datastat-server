@@ -8,49 +8,82 @@
  See the Mulan PSL v2 for more details.
  Create: 2024/02
 */
-
 package com.datastat.util;
 
-import java.util.Enumeration;
-
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientUtil {
-    private static final Logger logger = LoggerFactory.getLogger(ClientUtil.class);
-    public static String getClientIpAddress(HttpServletRequest request) {
-        String[] headerNames = {"x-forwarded-for", "Proxy-Client-IP", "WL-Proxy-Client-IP",
-                "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "X-Real-IP"};
+import jakarta.servlet.http.HttpServletRequest;
 
-        for (String headerName : headerNames) {
-            String ip = request.getHeader(headerName);
-            if (isValidIp(ip)) {
-                return extractIp(ip);
-            }
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+public final class ClientUtil {
+
+
+    // Private constructor to prevent instantiation of the utility class
+    private ClientUtil() {
+        // private constructor to hide the implicit public one
+        throw new AssertionError("ClientUtil class cannot be instantiated.");
+    }
+
+    /**
+     * Logger instance for ClientUtil.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientUtil.class);
+
+    /**
+     * Retrieve the client's IP address from the HttpServletRequest.
+     *
+     * @param request The HttpServletRequest object
+     * @return The client's IP address as a string
+     */
+    public static String getClientIpAddress(final HttpServletRequest request) {
+        String ip = request.getHeader("x-real-ip");
+        if (checkIp(ip)) {
+            ip = getForwardedIP(request);
         }
-
-        return request.getRemoteAddr();
-    }
-
-    private static boolean isValidIp(String ip) {
-        return ip != null && ip.length() > 0 && !"unknown".equalsIgnoreCase(ip);
-    }
-
-    private static String extractIp(String ip) {
-        if (ip.contains(",")) {
-            return ip.split(",")[0];
+        if (checkIp(ip)) {
+            ip = request.getRemoteAddr();
+            if ("127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
+                InetAddress inet = null;
+                try {
+                    inet = InetAddress.getLocalHost();
+                } catch (UnknownHostException e) {
+                    LOGGER.error("get local host error: " + e.getMessage());
+                }
+                ip = inet.getHostAddress();
+            }
         }
         return ip;
     }
 
-    public static void getHeaderValue(HttpServletRequest request) {
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()){
-            String name = headerNames.nextElement();
-            String value = request.getHeader(name);
-            logger.info("request header: name = {}, value = {}", name, value);
-        }
+    /**
+     * Check if the provided string is a valid IP address.
+     *
+     * @param ip The IP address to check.
+     * @return true if the IP address is valid, false otherwise.
+     */
+    private static boolean checkIp(final String ip) {
+        return null == ip || ip.length() == 0 || "unknown".equalsIgnoreCase(ip);
     }
 
+    /**
+     * Retrieve the client's x-forwarded-for IP address from the HttpServletRequest.
+     *
+     * @param request The HttpServletRequest object
+     * @return The client's IP address as a string
+     */
+    private static String getForwardedIP(final HttpServletRequest request) {
+        String headerName = "x-forwarded-for";
+        String ip = request.getHeader(headerName);
+        if (!checkIp(ip)) {
+            // There will be multiple IP values after multiple reverse proxies, pick the first IP.
+            if (ip.contains(",")) {
+                ip = ip.split(",")[0];
+            }
+        }
+        return ip;
+    }
 }
+

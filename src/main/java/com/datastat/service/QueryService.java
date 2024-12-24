@@ -24,6 +24,7 @@ import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.model.vo.*;
 import com.datastat.result.ReturnCode;
 import com.datastat.util.ArrayListUtil;
+import com.datastat.util.ClientUtil;
 import com.datastat.util.PageUtils;
 import com.datastat.util.RSAUtil;
 import com.datastat.util.ResultUtil;
@@ -322,19 +323,19 @@ public class QueryService {
         return result;
     }
 
-    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy) {
+    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy, String platform) {
         QueryDao queryDao = getQueryDao(request);
         String referer = request.getHeader("Referer");
         String community = null;
         try {
             community = referer.split("\\.")[1];
         } catch (Exception e) {
-            logger.error("exception", e);
+            logger.error("parse community exception - {}", e.getMessage());
             return resultJsonStr(404, "error", "Referer error");
         }      
         CustomPropertiesConfig queryConf = getQueryConf(community);
         
-        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community);
+        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community, platform);
     }
 
     public String queryNewYearMonthCount(HttpServletRequest request, String oauth2_proxy) {
@@ -1562,8 +1563,9 @@ public class QueryService {
 
     public String saveFrontendEvents(HttpServletRequest request, String community, String requestBody) {
         QueryDao queryDao = getQueryDao(request);
+        String clientIp = ClientUtil.getClientIpAddress(request);
         if (!checkCommunity(community)) return ResultUtil.resultJsonStr(404, "error", "not found");
-        return queryDao.saveFrontendEvents(community, requestBody);
+        return queryDao.saveFrontendEvents(community, requestBody, clientIp);
     }
 
     public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
