@@ -3934,26 +3934,32 @@ public class QueryDao {
      * Retrieves the view count statistics for a specified community and repository.
      *
      * @param queryConf Custom configuration properties containing necessary query configurations.
-     * @param repoType  The type of the repository, passed as a request parameter.
-     * @param owner  The owner of the repository, passed as a request parameter.
-     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @param condition  The search condition of the repository
      * @return A JSON string containing the monthly download count statistics.
      * @throws Exception If an error occurs during the query process.
      */
     @SneakyThrows
-    public String getViewCount(CustomPropertiesConfig queryConf, String repoType, String owner, String repo) {
-        String query = String.format(queryConf.getRepoViewCountQueryStr(), repoType, owner, repo);
-        ListenableFuture<Response> future =  esAsyncHttpUtil.executeCount(esUrl, queryConf.getExportWebsiteViewIndex(), query);
+    public String getViewCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getRepoViewCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
+        String index = queryConf.getExportWebsiteViewIndex();
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();
         int statusCode = response.getStatusCode();
         String statusText = response.getStatusText();
         String responseBody = response.getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(responseBody);
-        long count = dataNode.get("count").asLong();
-        Map<String, Object> resData = new HashMap<>();
-        resData.put("owner", owner);
-        resData.put("repo", repo);
-        resData.put("count", count);
-        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resData), statusText);  
+        JsonNode testStr = dataNode.get("aggregations").get("group_field").get("buckets");
+        ArrayNode buckets = objectMapper.createArrayNode();
+        if (testStr.isArray()) {
+            for (int i = 0; i < testStr.size(); i++) {
+                JsonNode item = testStr.get(i);
+                ObjectNode bucket = objectMapper.createObjectNode();
+                bucket.put("repo_id", item.get("key").asText());
+                bucket.put("count", item.get("doc_count").asInt());
+                buckets.add(bucket);
+            }
+        }
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
     }
 }
