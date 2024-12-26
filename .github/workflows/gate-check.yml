@@ -2,7 +2,11 @@ name: Gate Check
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]  # 在PR打开、同步、重新打开时触发
+    types: [opened, synchronize, reopened]
+    # 在PR打开、同步、重新打开时触发
+    branches:
+      - ${{ github.event.repository.default_branch }}
+      - release/*
 
 jobs:
   codearts-check:
