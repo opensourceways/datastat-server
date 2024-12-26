@@ -836,10 +836,7 @@ public class QueryController {
      * @return A string containing the monthly download count information for the repository.
      */
     @RequestMapping(value = "/view/count")
-    public String viewCount(HttpServletRequest request,
-            @RequestParam(value = "repoType") String repoType,
-            @RequestParam(value = "owner") String owner,
-            @RequestParam(value = "repo") String repo) {
-        return queryService.getViewCount(request, repoType, owner, repo);
+    public String viewCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.getViewCount(request, condition);
     }
 }

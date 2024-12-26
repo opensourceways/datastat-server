@@ -129,21 +129,27 @@ public class ServiceUnitTests {
     @Test()
     void testViewCountService() throws Exception {
         HttpServletRequest request = mock(HttpServletRequest.class);
-        String repoType = "dataset";
-        String owner = "owner";
-        String repo = "repo";
-        String key = "get_viewcount_" + repoType + owner + repo;
-        String result = "{\"code\":200,\"msg\":\"ok\",\"data\":{\"owner\":\"owner\",\"repo\":\"repo\",\"count\":30}}";
+        RequestParams params = new RequestParams();
+        params.setRepoType("model");
+
+        StringBuilder sb = new StringBuilder("get_viewcount_");
+        sb.append(params.getPath())
+                .append(params.getRepoType())
+                .append(params.getRepoId())
+                .append(params.getStart())
+                .append(params.getEnd());
+        String key = sb.toString();
+        String result = "{\"code\":200,\"msg\":\"ok\",\"data\":{\"repo_id\":\"1234\", \"count\":30}}";
         when(redisDao.get(key)).thenReturn(result);
-        String serviceRes = queryService.getViewCount(request, repoType, owner, repo);
+        String serviceRes = queryService.getViewCount(request, params);
         CommonUtil.assertOk(serviceRes);
 
         when(redisDao.get(key)).thenReturn(null);
         when(queryDaoContext.getQueryDao("queryDao")).thenReturn(foundryDao);
         when(queryConfContext.getQueryConfig("foundryConf")).thenReturn(queryConfig);
-        when(foundryDao.getViewCount(queryConfig, repoType, owner, repo)).thenReturn(result);
+        when(foundryDao.getViewCount(queryConfig, params)).thenReturn(result);
         when(redisDao.set(key, result, 1l)).thenReturn(true);
-        String res = queryService.getViewCount(request, repoType, owner, repo);
+        String res = queryService.getViewCount(request, params);
         CommonUtil.assertOk(res);
     }
 }
