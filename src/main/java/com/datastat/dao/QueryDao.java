@@ -3946,4 +3946,37 @@ public class QueryDao {
         resData.put("count", count);
         return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resData), statusText);  
     }
-}
+
+    /**
+     * Retrieves the view count for modeler's blog.
+     *
+     * @param queryConf Custom properties configuration object containing the necessary configuration information for the query.
+     * @return A JSON string containing the status code, result data, and status text.
+     * @throws Exception If an exception occurs during the execution of the query or processing of the response.
+     */
+    @SneakyThrows
+    public String getModelersBlogViewCount(CustomPropertiesConfig queryConf) {
+        String query = String.format(queryConf.getModelersBlogViewCountQueryStr());
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeSearch(esUrl, queryConf.getModelersTrackerIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        var buckets = dataNode.get("aggregations").get("group_by_id_and_title").get("buckets");
+        var resJsonArray = objectMapper.createArrayNode();
+        try {
+            for (var bucket : buckets) {
+                var jsonObject = objectMapper.createObjectNode();
+                jsonObject.put("id", bucket.get("key").get("id").asText());
+                jsonObject.put("title", bucket.get("key").get("title").asText());
+                jsonObject.put("count", bucket.get("doc_count").asInt());
+                resJsonArray.add(jsonObject);
+            }
+        } catch (Exception e) {
+            logger.error("query/modelers/blog/view get error", e.getMessage());
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resJsonArray), "No data found or query e");
+        }
+        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resJsonArray), statusText);  
+    }
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

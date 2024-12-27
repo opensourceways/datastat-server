@@ -836,4 +836,15 @@ public class QueryController {
             @RequestParam(value = "repo") String repo) {
         return queryService.getViewCount(request, repoType, owner, repo);
     }
+
+    /**
+     * Handles the request to view the modelers blog count.
+     *
+     * @param request the HttpServletRequest object containing client request data
+     * @return a String representing the view count of the modelers blog
+     */
+    @RequestMapping(value = "/modelers/blog/view")
+    public String modelersBlogView(HttpServletRequest request) {
+        return queryService.getModelersBlogViewCount(request);
+    }
 }
