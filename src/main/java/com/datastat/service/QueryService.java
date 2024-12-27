@@ -1685,13 +1685,19 @@ public class QueryService {
      * @param repo  The repo name of the repository, passed as a request parameter.
      * @return A JSON string containing the monthly download count statistics.
      */
-    public String getViewCount(HttpServletRequest request, String repoType, String owner, String repo) {
+    public String getViewCount(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        String key = "get_viewcount_" + repoType + owner + repo;
+        StringBuilder sb = new StringBuilder("get_viewcount_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.getViewCount(queryConf, repoType, owner, repo);
+            result = queryDao.getViewCount(queryConf, condition);
             redisDao.set(key, result, redisDefaultExpire);
         }
         return result;

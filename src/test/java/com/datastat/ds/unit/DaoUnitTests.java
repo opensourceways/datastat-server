@@ -38,6 +38,7 @@ import com.datastat.dao.QueryDao;
 import com.datastat.dao.RedisDao;
 import com.datastat.dao.context.QueryDaoContext;
 import com.datastat.ds.common.CommonUtil;
+import com.datastat.model.dto.RequestParams;
 import com.datastat.util.EsAsyncHttpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -116,22 +117,28 @@ public class DaoUnitTests {
 
     @Test()
     void testViewCountDao() throws Exception {
-        String respBody = "{\"count\": 1234, \"_shards\":{\"total\":4,\"successful\":4}}";
-        when(esAsyncHttpUtil.executeCount(anyString(), isNull(), anyString())).thenReturn(mockFuture);
+        String respBody = "{\"aggregations\":{\"group_field\":{\"buckets\":[{\"key\":\"3828\",\"doc_count\":1609}]}}}";
+        when(esAsyncHttpUtil.executeSearch(anyString(), isNull(), anyString())).thenReturn(mockFuture);
         when(mockFuture.get()).thenReturn(mockResponse);
         when(mockResponse.getStatusCode()).thenReturn(200);
         when(mockResponse.getStatusText()).thenReturn("OK");
         when(mockResponse.getResponseBody(StandardCharsets.UTF_8)).thenReturn(respBody);
         String community = "foundry";
-        String repoType = "dataset";
-        String owner = "owner";
-        String repo = "repo";
+        RequestParams params = new RequestParams();
+        params.setStart("2024-01-01");
+        params.setEnd("2024-12-01");
+        params.setRepoType("model");
+        params.setRepoId("3828");
+
         when(queryDaoContext.getQueryDao(community)).thenReturn(queryDao);
         when(queryConfContext.getQueryConfig(community)).thenReturn(queryConfig);
-        String query = "{\"query\":{\"bool\":{\"filter\":[{\"query_string\":{\"analyze_wildcard\":true,"
-                + "\"query\":\"event.keyword:$PageView AND properties.$path:\\\"/%ss/%s/%s\\\"\"}}]}}}";
+        String query = "{\"size\":0,\"query\":{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"gte\":\"%s\",\"lte\":\"%s\"}}},"
+                + "{\"query_string\":{\"analyze_wildcard\":true,"
+                + "\"query\":\"event.keyword:RV AND properties.module.keyword:%s AND properties.id.keyword:%s\"}}]}},"
+                + "\"aggs\":{\"group_field\":{\"terms\":{\"field\":\"properties.id.keyword\",\"size\":50,"
+                + "\"order\":{\"_count\":\"desc\"},\"min_doc_count\":1},\"aggs\":{}}}}";
         when(queryConfig.getRepoViewCountQueryStr()).thenReturn(query);
-        String res = queryDao.getViewCount(queryConfig, repoType, owner, repo);
+        String res = queryDao.getViewCount(queryConfig, params);
         CommonUtil.assertOk(res);
     }
 
