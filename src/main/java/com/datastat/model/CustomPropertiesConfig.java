@@ -227,6 +227,7 @@ public class CustomPropertiesConfig {
     private String starCountQueryStr;
     private String openmindRepoQueryStr;
     private String repoViewCountQueryStr;
+    private String modelersBlogViewCountQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();

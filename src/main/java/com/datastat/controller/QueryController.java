@@ -839,4 +839,16 @@ public class QueryController {
     public String viewCount(HttpServletRequest request, @Valid final RequestParams condition) {
         return queryService.getViewCount(request, condition);
     }
+
+    
+    /**
+     * Handles the request to view the modelers blog count.
+     *
+     * @param request the HttpServletRequest object containing client request data
+     * @return a String representing the view count of the modelers blog
+     */
+    @RequestMapping(value = "/modelers/blog/view")
+    public String modelersBlogView(HttpServletRequest request) {
+        return queryService.getModelersBlogViewCount(request);
+    }    
 }

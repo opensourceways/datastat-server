@@ -1702,4 +1702,26 @@ public class QueryService {
         }
         return result;
     }
+
+    /**
+     * Retrieves the view count for the modelers blog from cache or database.
+     *
+     * This method attempts to fetch the view count of the modelers blog from a Redis cache.
+     * If the cache does not contain the data, it queries the database to obtain the view count
+     * and then stores this data in the cache for future requests.
+     *
+     * @param request the HttpServletRequest object, which may contain information needed for the database query
+     * @return the view count of the modelers blog as a String
+     */
+    public String getModelersBlogViewCount(HttpServletRequest request) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_modelers_blogview_count";
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getModelersBlogViewCount(queryConf);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
 }
