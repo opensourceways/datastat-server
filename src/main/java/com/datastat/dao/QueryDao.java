@@ -383,6 +383,7 @@ public class QueryDao {
             dataMap.put("user_login", user);
             dataMap.put("community", community);
             dataMap.put("created_at", nowStr);
+            dataMap.put("platform", platform);
             request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
             if (request.requests().size() != 0)
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
