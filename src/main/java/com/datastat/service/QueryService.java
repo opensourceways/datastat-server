@@ -24,6 +24,7 @@ import com.datastat.model.CustomPropertiesConfig;
 import com.datastat.model.vo.*;
 import com.datastat.result.ReturnCode;
 import com.datastat.util.ArrayListUtil;
+import com.datastat.util.ClientUtil;
 import com.datastat.util.PageUtils;
 import com.datastat.util.RSAUtil;
 import com.datastat.util.ResultUtil;
@@ -322,19 +323,19 @@ public class QueryService {
         return result;
     }
 
-    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy) {
+    public String queryNewYearPer(HttpServletRequest request, String oauth2_proxy, String platform) {
         QueryDao queryDao = getQueryDao(request);
         String referer = request.getHeader("Referer");
         String community = null;
         try {
             community = referer.split("\\.")[1];
         } catch (Exception e) {
-            logger.error("exception", e);
+            logger.error("parse community exception - {}", e.getMessage());
             return resultJsonStr(404, "error", "Referer error");
         }      
         CustomPropertiesConfig queryConf = getQueryConf(community);
         
-        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community);
+        return queryDao.queryNewYearPer(queryConf, oauth2_proxy, community, platform);
     }
 
     public String queryNewYearMonthCount(HttpServletRequest request, String oauth2_proxy) {
@@ -1562,8 +1563,9 @@ public class QueryService {
 
     public String saveFrontendEvents(HttpServletRequest request, String community, String requestBody) {
         QueryDao queryDao = getQueryDao(request);
+        String clientIp = ClientUtil.getClientIpAddress(request);
         if (!checkCommunity(community)) return ResultUtil.resultJsonStr(404, "error", "not found");
-        return queryDao.saveFrontendEvents(community, requestBody);
+        return queryDao.saveFrontendEvents(community, requestBody, clientIp);
     }
 
     public String putGlobalNpsIssue(HttpServletRequest request, String token, String community, NpsBody body) {
@@ -1683,13 +1685,41 @@ public class QueryService {
      * @param repo  The repo name of the repository, passed as a request parameter.
      * @return A JSON string containing the monthly download count statistics.
      */
-    public String getViewCount(HttpServletRequest request, String repoType, String owner, String repo) {
+    public String getViewCount(HttpServletRequest request, RequestParams condition) {
         QueryDao queryDao = getQueryDao(request);
         CustomPropertiesConfig queryConf = getQueryConf("foundry");
-        String key = "get_viewcount_" + repoType + owner + repo;
+        StringBuilder sb = new StringBuilder("get_viewcount_");
+        sb.append(condition.getPath())
+                .append(condition.getRepoType())
+                .append(condition.getRepoId())
+                .append(condition.getStart())
+                .append(condition.getEnd());
+        String key = sb.toString();
         String result = (String) redisDao.get(key);
         if (result == null) {
-            result = queryDao.getViewCount(queryConf, repoType, owner, repo);
+            result = queryDao.getViewCount(queryConf, condition);
+            redisDao.set(key, result, redisDefaultExpire);
+        }
+        return result;
+    }
+
+    /**
+     * Retrieves the view count for the modelers blog from cache or database.
+     *
+     * This method attempts to fetch the view count of the modelers blog from a Redis cache.
+     * If the cache does not contain the data, it queries the database to obtain the view count
+     * and then stores this data in the cache for future requests.
+     *
+     * @param request the HttpServletRequest object, which may contain information needed for the database query
+     * @return the view count of the modelers blog as a String
+     */
+    public String getModelersBlogViewCount(HttpServletRequest request) {
+        QueryDao queryDao = getQueryDao(request);
+        CustomPropertiesConfig queryConf = getQueryConf("foundry");
+        String key = "get_modelers_blogview_count";
+        String result = (String) redisDao.get(key);
+        if (result == null) {
+            result = queryDao.getModelersBlogViewCount(queryConf);
             redisDao.set(key, result, redisDefaultExpire);
         }
         return result;

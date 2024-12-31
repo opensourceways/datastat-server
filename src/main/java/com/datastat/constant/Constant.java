@@ -39,7 +39,7 @@ public final class Constant {
     /**
      * VALID_OPENMIND_ENV_REG used to match input string.
      */
-    public static final String VALID_OPENMIND_ENV_REG = "pro|yidong|sh";
+    public static final String VALID_OPENMIND_ENV_REG = "pro|tianyi|sh";
 
     /**
      * VALID_REPO_ID used to match input string.
@@ -50,6 +50,16 @@ public final class Constant {
      * openmind社区.
      */
     public static final String OPENMIND_COMMUNITY = "openmind";
+
+    /**
+     * The name of github platform.
+     */
+    public static final String GITHUB_PLATFORM = "github";
+
+    /**
+     * The name of gutee platform.
+     */
+    public static final String GITEE_PLATFORM = "GITEE";
 
     /**
      * 支持性能数据上传的社区.

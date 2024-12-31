@@ -45,6 +45,7 @@ public class CustomPropertiesConfig {
     private String sigAction;
     private String isvYamlUrl;
     private String giteeUserInfoUrl;
+    private String githubUserInfoUrl;
     private String orgName;
     private String isvCountToken;
     private String checkField;
@@ -58,6 +59,10 @@ public class CustomPropertiesConfig {
     private String globalNpsIssueTitle;
     private String esBaseUrl;
     private String esAuth;
+    private String authTokenBasePassword;
+    private String rsaAuthPrivateKey;
+    private String authTokenSessionPassword;
+    private String authSalt;
 
     // -- index --
     private String extOsIndex;
@@ -222,6 +227,7 @@ public class CustomPropertiesConfig {
     private String starCountQueryStr;
     private String openmindRepoQueryStr;
     private String repoViewCountQueryStr;
+    private String modelersBlogViewCountQueryStr;
     
     protected static final Map<String, String> contributeTypeMap = new HashMap<>();
     protected static final Map<String, String> groupFieldMap = new HashMap<>();

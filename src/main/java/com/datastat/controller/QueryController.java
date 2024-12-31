@@ -152,7 +152,13 @@ public class QueryController {
     @RequestMapping("/newYear/report")
     public String queryNewYear(HttpServletRequest request,
                                @CookieValue(value = "_oauth2_proxy", required = true) String oauth2_proxy) {
-        return queryService.queryNewYearPer(request, oauth2_proxy);
+        return queryService.queryNewYearPer(request, oauth2_proxy, "gitee");
+    }
+
+    @RequestMapping("/newYear/report/github")
+    public String queryNewYearGithub(HttpServletRequest request,
+                               @CookieValue(value = "_oauth2_proxy", required = true) String oauth2_proxy) {
+        return queryService.queryNewYearPer(request, oauth2_proxy, "github");
     }
 
     @RequestMapping("/newYear/monthcount")
@@ -830,10 +836,19 @@ public class QueryController {
      * @return A string containing the monthly download count information for the repository.
      */
     @RequestMapping(value = "/view/count")
-    public String viewCount(HttpServletRequest request,
-            @RequestParam(value = "repoType") String repoType,
-            @RequestParam(value = "owner") String owner,
-            @RequestParam(value = "repo") String repo) {
-        return queryService.getViewCount(request, repoType, owner, repo);
+    public String viewCount(HttpServletRequest request, @Valid final RequestParams condition) {
+        return queryService.getViewCount(request, condition);
     }
+
+    
+    /**
+     * Handles the request to view the modelers blog count.
+     *
+     * @param request the HttpServletRequest object containing client request data
+     * @return a String representing the view count of the modelers blog
+     */
+    @RequestMapping(value = "/modelers/blog/view")
+    public String modelersBlogView(HttpServletRequest request) {
+        return queryService.getModelersBlogViewCount(request);
+    }    
 }

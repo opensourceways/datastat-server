@@ -356,18 +356,18 @@ public class QueryDao {
         return esQueryUtils.esFromId(restHighLevelClient, item, lastCursor, Integer.parseInt(pageSize), indexName);
     }
 
-    public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community) {
+    public String queryNewYearPer(CustomPropertiesConfig queryConf, String oauth2_proxy, String community,
+            String platform) {
         HashMap<String, Object> resMap = new HashMap<>();
         try {
-            String user = getUserFromCookie(queryConf, oauth2_proxy);
-            String localFile = env.getProperty("export_path") + community.toLowerCase() + "_" + env.getProperty("year") + ".csv";
+            String localFile = String.format("%s%s_%s_%s.csv", env.getProperty("export_path"), community.toLowerCase(),
+                    platform, env.getProperty("year"));
+            String user = getUserFromCookie(queryConf, oauth2_proxy, platform);
             List<HashMap<String, Object>> report = CsvFileUtil.readFile(localFile);
             resMap.put("code", 200);
             resMap.put("msg", "OK");
-            if (report == null)
+            if (report == null || user == null)
                 resMap.put("data", new ArrayList<>());
-            else if (user == null)
-                resMap.put("data", report);
             else {
                 List<HashMap<String, Object>> user_login = report.stream()
                         .filter(m -> m.getOrDefault("user_login", "").equals(user)).collect(Collectors.toList());
@@ -383,6 +383,7 @@ public class QueryDao {
             dataMap.put("user_login", user);
             dataMap.put("community", community);
             dataMap.put("created_at", nowStr);
+            dataMap.put("platform", platform);
             request.add(new IndexRequest("new_year_report", "_doc", uuid + nowStr).source(dataMap));
             if (request.requests().size() != 0)
                 restHighLevelClient.bulk(request, RequestOptions.DEFAULT);
@@ -392,13 +393,13 @@ public class QueryDao {
             return objectMapper.valueToTree(resMap).toString();
         } catch (Exception e) {
             logger.error("report exception - {}", e.getMessage());
-            return objectMapper.valueToTree(resMap).toString();
+            throw new RuntimeException(e.getMessage());
         }
     }
 
     @SneakyThrows
     public String queryNewYearMonthCount(CustomPropertiesConfig queryConf, String oauth2_proxy) {
-        String user = getUserFromCookie(queryConf, oauth2_proxy);
+        String user = getUserFromCookie(queryConf, oauth2_proxy, "gitee");
         String queryJson = String.format(queryConf.getMonthCountQueryStr(), user);
         ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, queryConf.getGiteeAllIndex(), queryJson);
         String responseBody = future.get().getResponseBody(UTF_8);
@@ -424,13 +425,22 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    private String getUserFromCookie(CustomPropertiesConfig queryConf, String oauth2_proxy) {
+    private String getUserFromCookie(CustomPropertiesConfig queryConf, String oauth2_proxy, String platform) {
         String cookie_oauth2_proxy = "_oauth2_proxy=" + oauth2_proxy;
-        HttpResponse<String> response = Unirest.get(queryConf.getGiteeUserInfoUrl())
+        String userInfoUrl;
+        if (Constant.GITEE_PLATFORM.equalsIgnoreCase(platform)) {
+            userInfoUrl = queryConf.getGiteeUserInfoUrl();
+        } else if (Constant.GITHUB_PLATFORM.equalsIgnoreCase(platform)) {
+            userInfoUrl = queryConf.getGithubUserInfoUrl();
+        } else {
+            throw new RuntimeException("error platform");
+        }
+        HttpResponse<String> response = Unirest.get(userInfoUrl)
             .header("cookie", cookie_oauth2_proxy)
             .asString();
 
         if (response.getStatus() != 200) {
+            logger.error("user auth execption - {}", response.getBody());
             throw new Exception("unauthorized");
         }
         JsonNode res = objectMapper.readTree(response.getBody());
@@ -1470,7 +1480,7 @@ public class QueryDao {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
         return null;
     }
@@ -3602,7 +3612,7 @@ public class QueryDao {
     }
 
     @SneakyThrows
-    public String saveFrontendEvents(String community, String requestBody) {
+    public String saveFrontendEvents(String community, String requestBody, String clientIp) {
       // 检测请求体是否含有header和body
       boolean hasHeader = requestBody.contains("\"header\"");
       boolean hasBody = requestBody.contains("\"body\"");
@@ -3650,6 +3660,7 @@ public class QueryDao {
 
           eventObj.put("created_at", nowStr);
           eventObj.put("community", community);
+          eventObj.put("clientIp", clientIp);
 
           JsonNode mergedJson = objectMapper.updateValue(eventObj, headerObj);
 
@@ -3717,7 +3728,7 @@ public class QueryDao {
         resMap.put("community", community);
         String userId = "";
         if (token != null && !"mindspore".equals(community)) {
-            userId = userIdDao.getUserIdByCommunity(token, community);
+            userId = userIdDao.getUserIdByCommunity(token, queryConf);
             if (null == userId || userId.equals("")) {
                 logger.warn("UserId parse error for token:" + token + ",community:" + community);
                 throw new IllegalArgumentException("UserId parse error");
@@ -3924,26 +3935,65 @@ public class QueryDao {
      * Retrieves the view count statistics for a specified community and repository.
      *
      * @param queryConf Custom configuration properties containing necessary query configurations.
-     * @param repoType  The type of the repository, passed as a request parameter.
-     * @param owner  The owner of the repository, passed as a request parameter.
-     * @param repo  The repo name of the repository, passed as a request parameter.
+     * @param condition  The search condition of the repository
      * @return A JSON string containing the monthly download count statistics.
      * @throws Exception If an error occurs during the query process.
      */
     @SneakyThrows
-    public String getViewCount(CustomPropertiesConfig queryConf, String repoType, String owner, String repo) {
-        String query = String.format(queryConf.getRepoViewCountQueryStr(), repoType, owner, repo);
-        ListenableFuture<Response> future =  esAsyncHttpUtil.executeCount(esUrl, queryConf.getExportWebsiteViewIndex(), query);
+    public String getViewCount(CustomPropertiesConfig queryConf, RequestParams condition) {
+        String query = String.format(queryConf.getRepoViewCountQueryStr(), condition.getStart(),
+                condition.getEnd(), condition.getRepoType(), condition.getRepoId());
+        String index = queryConf.getExportWebsiteViewIndex();
+        ListenableFuture<Response> future = esAsyncHttpUtil.executeSearch(esUrl, index, query);
         Response response = future.get();
         int statusCode = response.getStatusCode();
         String statusText = response.getStatusText();
         String responseBody = response.getResponseBody(UTF_8);
         JsonNode dataNode = objectMapper.readTree(responseBody);
-        long count = dataNode.get("count").asLong();
-        Map<String, Object> resData = new HashMap<>();
-        resData.put("owner", owner);
-        resData.put("repo", repo);
-        resData.put("count", count);
-        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resData), statusText);  
+        JsonNode testStr = dataNode.get("aggregations").get("group_field").get("buckets");
+        ArrayNode buckets = objectMapper.createArrayNode();
+        if (testStr.isArray()) {
+            for (int i = 0; i < testStr.size(); i++) {
+                JsonNode item = testStr.get(i);
+                ObjectNode bucket = objectMapper.createObjectNode();
+                bucket.put("repo_id", item.get("key").asText());
+                bucket.put("count", item.get("doc_count").asInt());
+                buckets.add(bucket);
+            }
+        }
+        return ResultUtil.resultJsonStr(statusCode, buckets, statusText);
+    }
+
+    /**
+     * Retrieves the view count for modeler's blog.
+     *
+     * @param queryConf Custom properties configuration object containing the necessary configuration information for the query.
+     * @return A JSON string containing the status code, result data, and status text.
+     * @throws Exception If an exception occurs during the execution of the query or processing of the response.
+     */
+    @SneakyThrows
+    public String getModelersBlogViewCount(CustomPropertiesConfig queryConf) {
+        String query = String.format(queryConf.getModelersBlogViewCountQueryStr());
+        ListenableFuture<Response> future =  esAsyncHttpUtil.executeSearch(esUrl, queryConf.getExportWebsiteViewIndex(), query);
+        Response response = future.get();
+        int statusCode = response.getStatusCode();
+        String statusText = response.getStatusText();
+        String responseBody = response.getResponseBody(UTF_8);
+        JsonNode dataNode = objectMapper.readTree(responseBody);
+        var buckets = dataNode.get("aggregations").get("group_by_id_and_title").get("buckets");
+        var resJsonArray = objectMapper.createArrayNode();
+        try {
+            for (var bucket : buckets) {
+                var jsonObject = objectMapper.createObjectNode();
+                jsonObject.put("id", bucket.get("key").get("id").asText());
+                jsonObject.put("title", bucket.get("key").get("title").asText());
+                jsonObject.put("count", bucket.get("doc_count").asInt());
+                resJsonArray.add(jsonObject);
+            }
+        } catch (Exception e) {
+            logger.error("query/modelers/blog/view get error - {}", e.getMessage());
+            return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resJsonArray), "No data found or query error");
+        }
+        return ResultUtil.resultJsonStr(statusCode, objectMapper.valueToTree(resJsonArray), statusText);  
     }
 }
