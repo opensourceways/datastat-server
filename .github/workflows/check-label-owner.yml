@@ -14,7 +14,7 @@ jobs:
           LABEL_NAME: "gate_check_pass"  # 替换为需要检查的标签名称
           GITHUB_TOKEN: ${{ secrets.OWNER_TOKEN }}
           TARGET_LABEL: "gate_check_pass"  # 替换为需要检查的标签名称
-          AUTHORIZED_USER: "shishupei"  # 替换为允许添加标签的 bot 用户名
+          AUTHORIZED_USER: "opensourceways-robot"  # 替换为允许添加标签的 bot 用户名
         run: |
           
           LABEL_NAME=${{ github.event.label.name }}
